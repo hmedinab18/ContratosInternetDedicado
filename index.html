@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Generador de Contratos — Relleno de PDF (multi-documento)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script> tailwind.config = { theme: { extend: {} } };</script>
+  <style>
+    :root{ --accent:#0ea5e9; --accent2:#22c55e; }
+    .brand-gradient{ background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+    .input {
+      background-color: #111827 !important;
+      border: 1px solid #334155 !important;
+      border-radius: 10px !important;
+      padding: 0.7rem 0.9rem !important;
+      width: 100% !important;
+      color: #f8fafc !important;
+      -webkit-text-fill-color: #f8fafc !important;
+      font-weight: 600 !important;
+      caret-color: #22d3ee !important;
+      transition: all 0.15s ease-in-out;
+    }
+    .input::placeholder { color: #9ca3af; opacity: 1; }
+    .input:focus { outline: none; border-color: #22d3ee !important; box-shadow: 0 0 0 2px #22d3ee55; background-color: #0f172a !important; }
+    .btn { background: var(--accent); color:#001014; font-weight:700; border-radius:14px; padding:.7rem 1rem; text-align:center }
+    .btn.alt { background:#334155; color:#e5e7eb }
+    #loginOverlay{ position: fixed; inset: 0; background: rgba(2,6,23,.9); display:flex; align-items:center; justify-content:center; z-index:50; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <div id="loginOverlay">
+    <div class="w-[95%] max-w-md bg-slate-900/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-md shadow">
+      <h2 class="text-xl font-bold mb-4">Acceso</h2>
+      <div class="space-y-3">
+        <input id="loginUser" class="input" placeholder="Usuario" autocomplete="username" />
+        <input id="loginPass" class="input" type="password" placeholder="Contraseña" autocomplete="current-password" />
+        <button id="loginBtn" class="btn w-full">Ingresar</button>
+        <p id="loginMsg" class="text-sm text-red-400 h-5"></p>
+        <p class="text-xs opacity-70">*Nota: acceso de conveniencia (cliente). No usar para datos sensibles.</p>
+      </div>
+    </div>
+  </div>
+
+  <header class="brand-gradient p-5 shadow-xl">
+    <div class="flex items-center justify-between">
+      <h1 class="text-2xl font-bold">Contrato Acceso Dedicado a Internet — Relleno de PDF</h1>
+      <button id="logoutBtn" class="text-sm px-3 py-1 rounded bg-black/20 hover:bg-black/30">Salir</button>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6 space-y-8">
+    <section class="grid md:grid-cols-3 gap-6">
+      <div class="md:col-span-2 space-y-6">
+        <!-- Datos -->
+        <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+          <h2 class="text-xl font-semibold mb-3">1) Datos del Representante Legal</h2>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <input id="RAZON_SOCIAL" class="input" placeholder="RAZON SOCIAL" />
+            <input id="RUC" class="input" placeholder="RUC" />
+            <input id="DIRECCION" class="input" placeholder="DIRECCION" />
+            <input id="NUMERO_DE_CALLE" class="input" placeholder="NUMERO DE CALLE" />
+            <input id="DPTO_INT" class="input" placeholder="DPTO_INT" />
+            <input id="URB" class="input" placeholder="URB" />
+            <input id="DISTRITO" class="input" placeholder="DISTRITO" />
+            <input id="CIUDAD" class="input" placeholder="CIUDAD" />
+            <input id="APELLIDO_PATERNO" class="input" placeholder="APELLIDO PATERNO" />
+            <input id="APELLIDO_MATERNO" class="input" placeholder="APELLIDO MATERNO" />
+            <input id="NOMBRES" class="input" placeholder="NOMBRES" />
+            <input id="CARGO" class="input" placeholder="CARGO" />
+            <input id="DNI" class="input" placeholder="DNI" />
+            <input id="TELEFONO" class="input" placeholder="TELEFONO" />
+            <input id="CORREO" class="input col-span-2" placeholder="CORREO" />
+          </div>
+        </div>
+
+        <!-- Contacto -->
+        <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+          <h2 class="text-xl font-semibold mb-3">2) Contacto de Instalación</h2>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <input id="CONT_NOMB" class="input" placeholder="CONT_NOMB" />
+            <input id="CONT_CARGO" class="input" placeholder="CONT_CARGO" />
+            <input id="CONT_DNI" class="input" placeholder="CONT_DNI" />
+            <input id="CONT_TELEF" class="input" placeholder="CONT_TELEF" />
+            <input id="CONT_CORREO" class="input col-span-2" placeholder="CONT_CORREO" />
+          </div>
+        </div>
+
+        <!-- Fecha -->
+        <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+          <h2 class="text-xl font-semibold mb-3">3) Fecha de Firma</h2>
+          <div class="grid sm:grid-cols-3 gap-3">
+            <input id="DIA" class="input" placeholder="DIA" />
+            <input id="MES" class="input" placeholder="MES" />
+            <input id="ANO" class="input" placeholder="AÑO" />
+          </div>
+        </div>
+
+        <!-- Firmante -->
+        <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+          <h2 class="text-xl font-semibold mb-3">4) Firmante</h2>
+          <div class="grid sm:grid-cols-2 gap-3">
+            <input id="RL" class="input" placeholder="RL" />
+            <input id="CARGO_FIRM" class="input" placeholder="CARGO (Firmante)" />
+          </div>
+        </div>
+
+        <!-- Suplementarios -->
+        <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+          <h2 class="text-xl font-semibold mb-3">5) Servicios Suplementarios</h2>
+          <div class="grid sm:grid-cols-3 gap-3">
+            <input id="CANTIDAD" class="input" placeholder="CANTIDAD" inputmode="numeric" />
+            <input id="SUB_TOTAL" class="input" placeholder="S/ 0.00" inputmode="decimal" />
+            <input id="NOMB_PROMOCION" class="input" placeholder="NOMB_PROMOCION" />
+          </div>
+          <div class="mt-3 grid sm:grid-cols-2 gap-3">
+            <input id="DIREC_INST" class="input" placeholder="DIREC_INST (Dirección de instalación)" />
+            <input id="CONT_TOTAL" class="input" placeholder="S/ 0.00 (TOTAL opcional)" inputmode="decimal" />
+          </div>
+        </div>
+
+        <!-- Tarifas y Servicios -->
+        <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+          <h2 class="text-xl font-semibold mb-3">6) Tarifas y Servicios</h2>
+          <div class="grid sm:grid-cols-2 gap-3 mb-3">
+            <select id="planSelect" class="input">
+              <option value="">— Selecciona un plan —</option>
+            </select>
+            <input id="TARIF_MENS" class="input" placeholder="S/ 0.00" />
+          </div>
+          <div class="grid sm:grid-cols-3 gap-3">
+            <input id="NOM_PLAN" class="input" placeholder="NOM_PLAN" />
+            <input id="MIN_GAR" class="input" placeholder="MIN_GAR (%)" />
+            <input id="VEL_MAX_BAJ" class="input" placeholder="VEL_MAX_BAJ (Mbps)" inputmode="numeric" />
+            <input id="VEL_MIN_BAJ" class="input" placeholder="VEL_MIN_BAJ (Mbps)" inputmode="numeric" />
+            <input id="VEL_MAX_SUB" class="input" placeholder="VEL_MAX_SUB (Mbps)" inputmode="numeric" />
+            <input id="VEL_MIN_SUB" class="input" placeholder="VEL_MIN_SUB (Mbps)" inputmode="numeric" />
+          </div>
+          <div class="grid sm:grid-cols-2 gap-3 mt-3">
+            <input id="PLAZO_INST" class="input" placeholder="PLAZO_INST (días hábiles)" inputmode="numeric" />
+            <select id="PLAZO_CONT" class="input">
+              <option value="">— Selecciona plazo (meses) —</option>
+              <option value="12">12</option>
+              <option value="24">24</option>
+              <option value="36">36</option>
+            </select>
+          </div>
+          <div class="mt-4 flex gap-3">
+            <button id="btnAuto" class="btn">Autocompletar por plan</button>
+            <button id="btnClearPlan" class="btn alt">Limpiar plan</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="space-y-6">
+        <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+          <h2 class="text-lg font-semibold mb-3">Exportar PDFs</h2>
+          <div class="flex flex-col gap-3">
+            <button id="btnArr" class="btn">Exportar Arrendamiento.pdf</button>
+            <button id="btnSup" class="btn">Exportar Servicios Suplementarios.pdf</button>
+            <button id="btnTar" class="btn">Exportar Tarifas y Servicios.pdf</button>
+            <button id="btnAll" class="btn alt">Exportar TODO</button>
+            <a id="downloadLink" class="hidden btn" download>Descargar</a>
+            <p id="status" class="text-sm opacity-80"></p>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+  <script>
+    // --- Login ---
+    const CRED = { user: 'mob_hmedinab', pass: 'adminMobilenet2025' };
+    const LOG_KEY = 'contratos_login_ok';
+    function showApp(){ document.getElementById('loginOverlay').style.display='none'; }
+    function requireLogin(){
+      if(localStorage.getItem(LOG_KEY)==='1'){ showApp(); return; }
+      const btn = document.getElementById('loginBtn');
+      const msg = document.getElementById('loginMsg');
+      btn.addEventListener('click', ()=>{
+        const u = document.getElementById('loginUser').value.trim();
+        const p = document.getElementById('loginPass').value;
+        if(u===CRED.user && p===CRED.pass){
+          localStorage.setItem(LOG_KEY,'1'); showApp();
+        }else{ msg.textContent = 'Usuario o contraseña incorrectos.'; }
+      });
+    }
+    requireLogin();
+    document.getElementById('logoutBtn').addEventListener('click', ()=>{
+      localStorage.removeItem(LOG_KEY); location.reload();
+    });
+
+    // --- Utilidades ---
+    const solesFmt = new Intl.NumberFormat('es-PE', { style:'currency', currency:'PEN', minimumFractionDigits:2 });
+    function normalizeMoneyInput(v){
+      if(!v) return '';
+      v = String(v).replace(/[^0-9,\.]/g,'').replace(',', '.');
+      const n = parseFloat(v); if(isNaN(n)) return '';
+      let f = solesFmt.format(n); f = f.replace('PEN','').trim().replace(/^S\$/, 'S/').replace('S/.','S/');
+      if(!f.startsWith('S/')) f = 'S/ ' + f; return f;
+    }
+    function attachMoneyFormatter(id){ const el=document.getElementById(id); el.addEventListener('blur',()=>{ el.value=normalizeMoneyInput(el.value); }); }
+    ['SUB_TOTAL','CONT_TOTAL','TARIF_MENS'].forEach(attachMoneyFormatter);
+
+    function byId(id){ return document.getElementById(id); }
+    function setVal(id, val){ const el=byId(id); if(el) el.value = val ?? ""; }
+
+    // --- Planes ---
+    const PLANS = [
+      { name:"Internet Fibra Plus 100 Mbps - 36M", minGar:"100%", vmb:100, vminb:100, vms:100, vmins:100, tarif:"S/ 270.00" },
+      { name:"Internet Fibra Plus 200 Mbps - 36M", minGar:"100%", vmb:200, vminb:200, vms:200, vmins:200, tarif:"S/ 360.00" },
+      { name:"Internet Fibra Plus 100 Mbps - 24M", minGar:"100%", vmb:100, vminb:100, vms:100, vmins:100, tarif:"S/ 370.00" },
+      { name:"Internet Fibra Plus 200 Mbps - 24M", minGar:"100%", vmb:200, vminb:200, vms:200, vmins:200, tarif:"S/ 490.00" },
+      { name:"Pack Fibra Plus 100 Mbps - 36M", minGar:"100%", vmb:100, vminb:100, vms:100, vmins:100, tarif:"S/ 279.90" },
+      { name:"Pack Fibra Plus 200 Mbps - 36M", minGar:"100%", vmb:200, vminb:200, vms:200, vmins:200, tarif:"S/ 369.90" },
+      { name:"Pack Fibra Plus 100 Mbps - 24M", minGar:"100%", vmb:100, vminb:100, vms:100, vmins:100, tarif:"S/ 379.90" },
+      { name:"Pack Fibra Plus 200 Mbps - 24M", minGar:"100%", vmb:200, vminb:200, vms:200, vmins:200, tarif:"S/ 499.90" },
+      { name:"Internet Dedicado 10 Mbps", minGar:"100%", vmb:10, vminb:10, vms:10, vmins:10, tarif:"S/ 500.00" },
+      { name:"Internet Dedicado 20 Mbps", minGar:"100%", vmb:20, vminb:20, vms:20, vmins:20, tarif:"S/ 550.00" },
+      { name:"Internet Dedicado 50 Mbps", minGar:"100%", vmb:50, vminb:50, vms:50, vmins:50, tarif:"S/ 590.00" },
+      { name:"Internet Dedicado 100 Mbps", minGar:"100%", vmb:100, vminb:100, vms:100, vmins:100, tarif:"S/ 690.00" },
+      { name:"Internet Dedicado 200 Mbps", minGar:"100%", vmb:200, vminb:200, vms:200, vmins:200, tarif:"S/ 1,100.00" },
+      { name:"Internet Dedicado 250 Mbps", minGar:"100%", vmb:250, vminb:250, vms:250, vmins:250, tarif:"S/ 1,400.00" }
+    ];
+    const planSelect = document.getElementById('planSelect');
+    PLANS.forEach(p=>{ const opt=document.createElement('option'); opt.value=p.name; opt.textContent=p.name; planSelect.appendChild(opt); });
+    function fillPlanFromSelection(){
+      const sel = planSelect.value; const p = PLANS.find(x=>x.name===sel); if(!p) return;
+      setVal('NOM_PLAN', p.name); setVal('MIN_GAR', p.minGar);
+      setVal('VEL_MAX_BAJ', String(p.vmb)); setVal('VEL_MIN_BAJ', String(p.vminb));
+      setVal('VEL_MAX_SUB', String(p.vms)); setVal('VEL_MIN_SUB', String(p.vmins));
+      setVal('TARIF_MENS', p.tarif);
+      const match = p.name.match(/(\d{2})M/); const plazo = match ? match[1] : '';
+      const plazoSel = document.getElementById('PLAZO_CONT');
+      if(plazo && ['12','24','36'].includes(plazo)) plazoSel.value = plazo;
+    }
+    document.getElementById('btnAuto').addEventListener('click', fillPlanFromSelection);
+    planSelect.addEventListener('change', fillPlanFromSelection);
+    document.getElementById('btnClearPlan').addEventListener('click', ()=>{
+      ['NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS'].forEach(id=>setVal(id,''));
+      document.getElementById('PLAZO_CONT').value='';
+      planSelect.value='';
+    });
+
+    // --- Recolección de datos ---
+    function gatherData(){
+      const ids = [
+        'RAZON_SOCIAL','RUC','DIRECCION','NUMERO_DE_CALLE','DPTO_INT','URB','DISTRITO','CIUDAD',
+        'APELLIDO_PATERNO','APELLIDO_MATERNO','NOMBRES','CARGO','DNI','TELEFONO','CORREO',
+        'CONT_NOMB','CONT_CARGO','CONT_DNI','CONT_TELEF','CONT_CORREO',
+        'DIA','MES','ANO','RL','CARGO_FIRM',
+        'CANTIDAD','SUB_TOTAL','NOMB_PROMOCION','DIREC_INST','CONT_TOTAL',
+        'NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS','PLAZO_INST','PLAZO_CONT'
+      ];
+      const data={};
+      ids.forEach(id=>{
+        let v = byId(id)?.value ?? '';
+        if(id==='SUB_TOTAL' || id==='CONT_TOTAL' || id==='TARIF_MENS') v = normalizeMoneyInput(v);
+        if(id==='PLAZO_CONT'){ v = String(v).trim(); } // 12/24/36
+        data[id]=v;
+      });
+      return data;
+    }
+
+    // --- Mapeos por documento ---
+    const MAP_ARR = {
+      'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE',
+      'DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD',
+      'APELLIDO PATERNO':'APELLIDO_PATERNO','APELLIDO MATERNO':'APELLIDO_MATERNO','NOMBRES':'NOMBRES',
+      'DNI':'DNI','TELEFONO':'TELEFONO','CORREO':'CORREO',
+      'CONT_NOMB':'CONT_NOMB','CONT_CARGO':'CONT_CARGO','CONT_DNI':'CONT_DNI','CONT_TELEF':'CONT_TELEF','CONT_CORREO':'CONT_CORREO',
+      'DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','CARGO':'CARGO_FIRM'
+    };
+    const MAP_SUP = {
+      'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE','DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD',
+      'APELLIDO PATERNO':'APELLIDO_PATERNO','APELLIDO MATERNO':'APELLIDO_MATERNO','NOMBRES':'NOMBRES','DNI':'DNI','TELEFONO':'TELEFONO','CORREO':'CORREO',
+      'CONT_NOMB':'CONT_NOMB','CONT_CARGO':'CONT_CARGO','CONT_DNI':'CONT_DNI','CONT_TELEF':'CONT_TELEF','CONT_CORREO':'CONT_CORREO',
+      'CANTIDAD':'CANTIDAD','SUB_TOTAL':'SUB_TOTAL','TOTAL':'CONT_TOTAL','NOMB_PROMOCION':'NOMB_PROMOCION','DIREC_INST':'DIREC_INST',
+      'DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','CARGO':'CARGO_FIRM'
+    };
+    const MAP_TAR = {
+      'CARGO FIJO':'TARIF_MENS','CARGO':'CARGO_FIRM','CORREO':'CORREO',
+      'DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL',
+      'NOM_PLAN':'NOM_PLAN','MIN_GAR':'MIN_GAR','VEL_MAX_BAJ':'VEL_MAX_BAJ','VEL_MIN_BAJ':'VEL_MIN_BAJ','VEL_MAX_SUB':'VEL_MAX_SUB','VEL_MIN_SUB':'VEL_MIN_SUB',
+      'TARIF_MENS':'TARIF_MENS','DIREC_INST':'DIREC_INST','PLAZO_INST':'PLAZO_INST','PLAZO_CONT':'PLAZO_CONT'
+    };
+
+    async function fillOne(pdfFileName, map){
+      const status = byId('status'); status.textContent = 'Cargando ' + pdfFileName + '...';
+      const resp = await fetch(pdfFileName);
+      if(!resp.ok) throw new Error('No se pudo cargar ' + pdfFileName);
+      const arr = await resp.arrayBuffer();
+      const pdfDoc = await PDFLib.PDFDocument.load(arr);
+      const form = pdfDoc.getForm();
+      const data = gatherData();
+      let filled = 0;
+      for(const [pdfField, htmlId] of Object.entries(map)){
+        try{ const tf = form.getTextField(pdfField); tf.setText(data[htmlId] ?? ''); filled++; }
+        catch(e){ console.warn('Campo faltante en', pdfFileName, ':', pdfField); }
+      }
+      form.flatten();
+      const bytes = await pdfDoc.save();
+      const blob = new Blob([bytes], {type:'application/pdf'});
+      const url = URL.createObjectURL(blob);
+      const a = document.getElementById('downloadLink');
+      a.href = url; a.download = pdfFileName; // mismo nombre
+      a.classList.remove('hidden'); a.click();
+      status.textContent = 'Generado ' + pdfFileName + ' (' + filled + ' campos).';
+    }
+
+    document.getElementById('btnArr').addEventListener('click', ()=> fillOne('Arrendamiento.pdf', MAP_ARR));
+    document.getElementById('btnSup').addEventListener('click', ()=> fillOne('Servicios Suplementarios.pdf', MAP_SUP));
+    document.getElementById('btnTar').addEventListener('click', ()=> fillOne('Tarifas y Servicios.pdf', MAP_TAR));
+    document.getElementById('btnAll').addEventListener('click', async ()=>{
+      await fillOne('Arrendamiento.pdf', MAP_ARR);
+      await fillOne('Servicios Suplementarios.pdf', MAP_SUP);
+      await fillOne('Tarifas y Servicios.pdf', MAP_TAR);
+    });
+  </script>
+</body>
+</html>
