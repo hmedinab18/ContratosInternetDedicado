@@ -58,12 +58,13 @@ table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #334155;
 
     <div class="grid md:grid-cols-2 gap-6">
       <div>
-        <h3 class="font-semibold mb-2">Crear nuevo usuario (standard)</h3>
+        <h3 class="font-semibold mb-2">Crear usuario</h3>
         <div class="grid sm:grid-cols-3 gap-3">
           <input id="newUser" class="input" placeholder="Usuario"/>
           <input id="newPass" class="input" type="password" placeholder="Contraseña"/>
-          <select id="newRole" class="input" disabled>
-            <option value="standard" selected>standard (solo IP 190.235.163.141)</option>
+          <select id="newRole" class="input">
+            <option value="normal" selected>NORMAL (IP 190.235.163.141)</option>
+            <option value="admin">ADMINISTRADOR (sin restricción)</option>
           </select>
         </div>
         <div class="flex gap-3 mt-3">
@@ -96,10 +97,11 @@ table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #334155;
   </div>
 </div>
 
-<!-- MAIN -->
+<!-- MAIN (idéntico a la versión anterior; omitido por brevedad visual) -->
 <main class="max-w-6xl mx-auto p-6 space-y-8">
   <section class="grid md:grid-cols-3 gap-6">
     <div class="md:col-span-2 space-y-6">
+
       <!-- 1) Datos RL -->
       <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
         <h2 class="text-xl font-semibold mb-3">1) Datos del Representante Legal</h2>
@@ -214,24 +216,35 @@ table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #334155;
 
 <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 <script>
-/* ====== Claves ====== */
+/* ====== Constantes ====== */
 const USERS_KEY='contratos_users', LOG_KEY='contratos_login_ok', USER_KEY='contratos_login_user', LOGS_KEY='contratos_registros';
-const ADMIN={u:'mob_hmedinab',p:'adminMobilenet2025',role:'admin'};
+const ADMIN={u:'mob_hmedinab',p:'adminMobilenet2025',role:'admin'}; // administrador semilla
 const IP_ALLOWED='190.235.163.141';
+const norm=s=>String(s||'').trim().toLowerCase();
 
-/* ====== Helpers storage ====== */
-const loadUsers=()=>{try{return JSON.parse(localStorage.getItem(USERS_KEY))||[]}catch{return[]}};
+/* ====== Storage helpers ====== */
+const loadUsers=()=>{try{
+  const arr=JSON.parse(localStorage.getItem(USERS_KEY))||[];
+  // migración: 'standard' -> 'normal', y normalizar usuarios a minúsculas
+  arr.forEach(u=>{ if(u.role==='standard') u.role='normal'; if(u.u) u.uLower=norm(u.u); });
+  return arr;
+}catch{return[]}};
 const saveUsers=a=>localStorage.setItem(USERS_KEY,JSON.stringify(a));
-(function ensureAdmin(){const a=loadUsers(); if(!a.some(x=>x&&x.u===ADMIN.u)){a.push(ADMIN); saveUsers(a)}})();
+(function ensureAdmin(){
+  const a=loadUsers();
+  if(!a.some(x=>x.uLower===norm(ADMIN.u))){
+    a.push({u:ADMIN.u,p:ADMIN.p,role:'admin',uLower:norm(ADMIN.u)});
+    saveUsers(a);
+  }else{
+    saveUsers(a); // regraba con uLower/migración
+  }
+})();
 
 const setLogged=u=>{localStorage.setItem(LOG_KEY,'1'); localStorage.setItem(USER_KEY,JSON.stringify(u))};
 const getLogged=()=>{try{return JSON.parse(localStorage.getItem(USER_KEY))}catch{return null}};
 const clearLogged=()=>{localStorage.removeItem(LOG_KEY); localStorage.removeItem(USER_KEY)};
 
-/* ====== Error visible (ayuda a depurar en Vercel) ====== */
-window.addEventListener('error',e=>{ const st=document.getElementById('status'); if(st) st.textContent='Error: '+e.message });
-
-/* ====== IP pública (solo afecta a standard) ====== */
+/* ====== IP pública ====== */
 let CURRENT_IP=null;
 (async()=>{
   try{
@@ -241,7 +254,7 @@ let CURRENT_IP=null;
   }catch{ document.getElementById('ipInfo').textContent='No se pudo detectar la IP (no afecta al admin).'; }
 })();
 
-/* ====== UI & login ====== */
+/* ====== UI / sesión ====== */
 const whoami=document.getElementById('whoami');
 const btnConfig=document.getElementById('btnConfig');
 const modal=document.getElementById('configModal');
@@ -249,27 +262,30 @@ const closeCfg=document.getElementById('closeConfig');
 
 function applyRoleUI(){
   const me=getLogged(); if(!me){whoami.textContent='—'; btnConfig.classList.add('hidden'); return;}
-  whoami.textContent=`Sesión: ${me.u} `; const b=document.createElement('span'); b.className='badge ml-2'; b.textContent=me.role; whoami.appendChild(b);
+  whoami.textContent=`Sesión: ${me.u} `;
+  const b=document.createElement('span'); b.className='badge ml-2'; b.textContent=me.role; whoami.appendChild(b);
   if(me.role==='admin') btnConfig.classList.remove('hidden'); else btnConfig.classList.add('hidden');
 }
 function showApp(){ document.getElementById('loginOverlay').style.display='none'; applyRoleUI(); populatePlans(); }
 
+/* limpiar sesión corrupta (cambios de deploy) */
 (function guardStale(){
   if(localStorage.getItem(LOG_KEY)==='1'){
     try{ JSON.parse(localStorage.getItem(USER_KEY)) }catch{ clearLogged() }
   }
 })();
 
+/* ====== Login ====== */
 (function initLogin(){
   const msg=document.getElementById('loginMsg');
-  document.getElementById('resetAll').onclick=()=>{ localStorage.removeItem(USERS_KEY); clearLogged(); saveUsers([ADMIN]); msg.textContent='Acceso restablecido. Use admin.'; setTimeout(()=>msg.textContent='',3000); };
+  document.getElementById('resetAll').onclick=()=>{ localStorage.removeItem(USERS_KEY); clearLogged(); saveUsers([{u:ADMIN.u,p:ADMIN.p,role:'admin',uLower:norm(ADMIN.u)}]); msg.textContent='Acceso restablecido. Use admin.'; setTimeout(()=>msg.textContent='',3000); };
   document.getElementById('loginBtn').onclick=()=>{
-    const u=document.getElementById('loginUser').value.trim();
+    const u=norm(document.getElementById('loginUser').value);
     const p=document.getElementById('loginPass').value.trim();
-    const found=loadUsers().find(x=>x.u===u && x.p===p);
+    const found=loadUsers().find(x=>x.uLower===u && x.p===p);
     if(!found){ msg.textContent='Usuario o contraseña incorrectos.'; return; }
     if(found.role!=='admin' && CURRENT_IP!==IP_ALLOWED){
-      msg.textContent='Solo permitido desde IP '+IP_ALLOWED+'. Detectada: '+(CURRENT_IP||'desconocida'); return;
+      msg.textContent='Usuario NORMAL: solo permitido desde IP '+IP_ALLOWED+'. Detectada: '+(CURRENT_IP||'desconocida'); return;
     }
     setLogged({u:found.u,role:found.role}); showApp();
   };
@@ -277,20 +293,24 @@ function showApp(){ document.getElementById('loginOverlay').style.display='none'
 })();
 document.getElementById('logoutBtn').onclick=()=>{ clearLogged(); location.reload(); };
 
+/* ====== Config modal ====== */
 btnConfig.onclick=()=>{ if(getLogged()?.role!=='admin') return; renderUsers(); renderLogs(); modal.style.display='flex'; };
 closeCfg.onclick=()=> modal.style.display='none';
 modal.addEventListener('click',e=>{ if(e.target===modal) modal.style.display='none'; });
 
-/* ====== Usuarios ====== */
+/* ====== Crear usuarios (normal/admin) ====== */
 document.getElementById('btnCreateUser').onclick=()=>{
   if(getLogged()?.role!=='admin') return;
-  const u=document.getElementById('newUser').value.trim();
-  const p=document.getElementById('newPass').value.trim();
+  const name=document.getElementById('newUser').value.trim();
+  const pass=document.getElementById('newPass').value.trim();
+  const role=document.getElementById('newRole').value; // 'normal' | 'admin'
   const out=document.getElementById('userMsg');
-  if(!u||!p){ out.textContent='Completa usuario y contraseña.'; return; }
-  const arr=loadUsers(); if(arr.some(x=>x.u===u)){ out.textContent='Ese usuario ya existe.'; return; }
-  arr.push({u,p,role:'standard'}); saveUsers(arr);
-  out.textContent='Usuario creado (IP 190.235.163.141).';
+  if(!name||!pass){ out.textContent='Completa usuario y contraseña.'; return; }
+  const arr=loadUsers();
+  if(arr.some(x=>x.uLower===norm(name))){ out.textContent='Ese usuario ya existe.'; return; }
+  arr.push({u:name,p:pass,role:role,uLower:norm(name)});
+  saveUsers(arr);
+  out.textContent='Usuario creado ('+(role==='admin'?'ADMINISTRADOR':'NORMAL, IP 190.235.163.141')+').';
   document.getElementById('newUser').value=''; document.getElementById('newPass').value='';
   renderUsers();
 };
@@ -326,32 +346,11 @@ const byId=id=>document.getElementById(id);
 const setVal=(id,val)=>{const el=byId(id); if(el) el.value=val??''};
 
 /* ====== Planes ====== */
-const PLANS=[
-  {name:"Internet Fibra Plus 100 Mbps - 36M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 270.00"},
-  {name:"Internet Fibra Plus 200 Mbps - 36M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 360.00"},
-  {name:"Internet Fibra Plus 100 Mbps - 24M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 370.00"},
-  {name:"Internet Fibra Plus 200 Mbps - 24M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 490.00"},
-  {name:"Pack Fibra Plus 100 Mbps - 36M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 279.90"},
-  {name:"Pack Fibra Plus 200 Mbps - 36M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 369.90"},
-  {name:"Pack Fibra Plus 100 Mbps - 24M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 379.90"},
-  {name:"Pack Fibra Plus 200 Mbps - 24M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 499.90"},
-  {name:"Internet Dedicado 10 Mbps",minGar:"100%",vmb:10,vminb:10,vms:10,vmins:10,tarif:"S/ 500.00"},
-  {name:"Internet Dedicado 20 Mbps",minGar:"100%",vmb:20,vminb:20,vms:20,vmins:20,tarif:"S/ 550.00"},
-  {name:"Internet Dedicado 50 Mbps",minGar:"100%",vmb:50,vminb:50,vms:50,vmins:50,tarif:"S/ 590.00"},
-  {name:"Internet Dedicado 100 Mbps",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 690.00"},
-  {name:"Internet Dedicado 200 Mbps",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 1,100.00"},
-  {name:"Internet Dedicado 250 Mbps",minGar:"100%",vmb:250,vminb:250,vms:250,vmins:250,tarif:"S/ 1,400.00"}
-];
+const PLANS=[{name:"Internet Fibra Plus 100 Mbps - 36M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 270.00"},{name:"Internet Fibra Plus 200 Mbps - 36M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 360.00"},{name:"Internet Fibra Plus 100 Mbps - 24M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 370.00"},{name:"Internet Fibra Plus 200 Mbps - 24M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 490.00"},{name:"Pack Fibra Plus 100 Mbps - 36M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 279.90"},{name:"Pack Fibra Plus 200 Mbps - 36M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 369.90"},{name:"Pack Fibra Plus 100 Mbps - 24M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 379.90"},{name:"Pack Fibra Plus 200 Mbps - 24M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 499.90"},{name:"Internet Dedicado 10 Mbps",minGar:"100%",vmb:10,vminb:10,vms:10,vmins:10,tarif:"S/ 500.00"},{name:"Internet Dedicado 20 Mbps",minGar:"100%",vmb:20,vminb:20,vms:20,vmins:20,tarif:"S/ 550.00"},{name:"Internet Dedicado 50 Mbps",minGar:"100%",vmb:50,vminb:50,vms:50,vmins:50,tarif:"S/ 590.00"},{name:"Internet Dedicado 100 Mbps",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 690.00"},{name:"Internet Dedicado 200 Mbps",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 1,100.00"},{name:"Internet Dedicado 250 Mbps",minGar:"100%",vmb:250,vminb:250,vms:250,vmins:250,tarif:"S/ 1,400.00"}];
 function populatePlans(){
-  const sel=document.getElementById('planSelect');
-  if(!sel) return;
+  const sel=document.getElementById('planSelect'); if(!sel) return;
   sel.innerHTML='<option value="">— Selecciona un plan —</option>';
-  try{
-    PLANS.forEach(p=>{ const o=document.createElement('option'); o.value=p.name; o.textContent=p.name; sel.appendChild(o); });
-  }catch(e){
-    const st=document.getElementById('status'); if(st) st.textContent='Error cargando planes: '+e.message;
-    console.error(e);
-  }
+  PLANS.forEach(p=>{const o=document.createElement('option'); o.value=p.name; o.textContent=p.name; sel.appendChild(o)});
 }
 function fillPlanFromSelection(){
   const sel=document.getElementById('planSelect').value;
@@ -365,16 +364,14 @@ function fillPlanFromSelection(){
 }
 document.getElementById('btnAuto').onclick=fillPlanFromSelection;
 document.getElementById('planSelect').addEventListener('change',fillPlanFromSelection);
-document.getElementById('btnClearPlan').onclick=()=>{['NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS'].forEach(i=>setVal(i,'')); document.getElementById('PLAZO_CONT').value=''; document.getElementById('planSelect').value=''};
-/* Poblado extra por si el navegador retrasa scripts */
 document.addEventListener('DOMContentLoaded',populatePlans);
+document.getElementById('btnClearPlan').onclick=()=>{['NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS'].forEach(i=>setVal(i,'')); document.getElementById('PLAZO_CONT').value=''; document.getElementById('planSelect').value=''};
 
 /* ====== Datos / PDFs ====== */
 function gatherData(){
   const ids=['RAZON_SOCIAL','RUC','DIRECCION','NUMERO_DE_CALLE','DPTO_INT','URB','DISTRITO','CIUDAD','APELLIDO_PATERNO','APELLIDO_MATERNO','NOMBRES','CARGO','DNI','TELEFONO','CORREO','CONT_NOMB','CONT_CARGO','CONT_DNI','CONT_TELEF','CONT_CORREO','DIA','MES','ANO','RL','CARGO_FIRM','CANTIDAD','SUB_TOTAL','NOMB_PROMOCION','DIREC_INST','CONT_TOTAL','NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS','PLAZO_INST','PLAZO_CONT'];
-  const d={}; ids.forEach(id=>{let v=byId(id)?.value??''; if(['SUB_TOTAL','CONT_TOTAL','TARIF_MENS'].includes(id)) v=normalizeMoneyInput(v); if(id==='PLAZO_CONT') v=String(v).trim(); d[id]=v}); return d;
+  const d={}; ids.forEach(id=>{let v=document.getElementById(id)?.value??''; if(['SUB_TOTAL','CONT_TOTAL','TARIF_MENS'].includes(id)) v=normalizeMoneyInput(v); if(id==='PLAZO_CONT') v=String(v).trim(); d[id]=v}); return d;
 }
-
 const MAP_ARR={'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE','DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD','APELLIDO PATERNO':'APELLIDO_PATERNO','APELLIDO MATERNO':'APELLIDO_MATERNO','NOMBRES':'NOMBRES','DNI':'DNI','TELEFONO':'TELEFONO','CORREO':'CORREO','CONT_NOMB':'CONT_NOMB','CONT_CARGO':'CONT_CARGO','CONT_DNI':'CONT_DNI','CONT_TELEF':'CONT_TELEF','CONT_CORREO':'CONT_CORREO','DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','CARGO':'CARGO_FIRM'};
 const MAP_SUP={'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE','DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD','APELLIDO PATERNO':'APELLIDO_PATERNO','APELLIDO MATERNO':'APELLIDO_MATERNO','NOMBRES':'NOMBRES','DNI':'DNI','TELEFONO':'TELEFONO','CORREO':'CORREO','CONT_NOMB':'CONT_NOMB','CONT_CARGO':'CONT_CARGO','CONT_DNI':'CONT_DNI','CONT_TELEF':'CONT_TELEF','CONT_CORREO':'CONT_CORREO','CANTIDAD':'CANTIDAD','SUB_TOTAL':'SUB_TOTAL','TOTAL':'CONT_TOTAL','NOMB_PROMOCION':'NOMB_PROMOCION','DIREC_INST':'DIREC_INST','DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','CARGO':'CARGO_FIRM'};
 const MAP_TAR={'CARGO FIJO':'TARIF_MENS','CARGO':'CARGO_FIRM','CORREO':'CORREO','DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','NOM_PLAN':'NOM_PLAN','MIN_GAR':'MIN_GAR','VEL_MAX_BAJ':'VEL_MAX_BAJ','VEL_MIN_BAJ':'VEL_MIN_BAJ','VEL_MAX_SUB':'VEL_MAX_SUB','VEL_MIN_SUB':'VEL_MIN_SUB','TARIF_MENS':'TARIF_MENS','DIREC_INST':'DIREC_INST','PLAZO_INST':'PLAZO_INST','PLAZO_CONT':'PLAZO_CONT'};
@@ -397,7 +394,6 @@ async function fillOne(pdfFileName,map){
   a.href=url; a.download=pdfFileName; a.classList.remove('hidden'); a.click();
   status.textContent='Generado '+pdfFileName+' ('+filled+' campos).';
 }
-
 async function exportAll(){
   const me=getLogged()||{u:'(desconocido)'};
   await fillOne('Arrendamiento.pdf',MAP_ARR);
@@ -412,3 +408,4 @@ document.getElementById('btnAll').addEventListener('click',exportAll);
 </script>
 </body>
 </html>
+
