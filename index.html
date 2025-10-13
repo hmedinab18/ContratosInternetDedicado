@@ -74,7 +74,7 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
         <div class="flex items-center gap-4 mt-3">
           <label class="switch">
             <input id="newRestrict" type="checkbox" checked>
-            <span>Restringir por IP (190.235.163.141)</span>
+            <span>Restringir por IP (IPs permitidas)</span>
           </label>
           <button id="btnCreateUser" class="btn">Crear usuario</button>
         </div>
@@ -220,12 +220,23 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
 
 <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
 <script>
-/* ====== Constantes ====== */
+/* ====== Constantes / seeds ====== */
 const USERS_KEY='contratos_users', LOG_KEY='contratos_login_ok', USER_KEY='contratos_login_user', LOGS_KEY='contratos_registros';
-const ADMIN={u:'mob_hmedinab',p:'adminMobilenet2025',role:'admin',restrictIp:false};
-const IP_ALLOWED='190.235.163.141';
+
+/* IPs permitidas para usuarios NORMALES con restricción */
+const ALLOWED_IPS = ['148.102.51.78','190.8.133.125'];
+
+/* Usuarios iniciales (semilla) */
+const SEED_USERS = [
+  {u:'mob_hmedinab',  p:'adminMobilenet2025', role:'admin',  restrictIp:false},
+  {u:'mob_dcarrasco', p:'adminMobilenet2025', role:'admin',  restrictIp:false},
+  {u:'MOB_JAQPAREDES', p:'Mob_2025-17553',   role:'normal', restrictIp:true},
+  {u:'MOB_WALSALCEDO', p:'Mob_2025-63354',   role:'normal', restrictIp:true},
+  {u:'MOB_SANDDIAZ',   p:'Mob_2025-32524',   role:'normal', restrictIp:true},
+  {u:'MOB_NARFUENTES', p:'Mob_2025-45225',   role:'normal', restrictIp:true},
+];
+
 const norm=s=>String(s||'').trim().toLowerCase();
-// id normalizado de usuario (acepta mob-walter / mob_walter / mob walter)
 const userId=s=>norm(s).replace(/[\s._-]+/g,'');
 
 /* ====== Storage helpers ====== */
@@ -235,16 +246,20 @@ const loadUsers=()=>{try{
     if(u.role==='standard') u.role='normal';
     u.uLower = norm(u.u);
     u.uid    = u.uid || userId(u.u);
-    if(typeof u.restrictIp === 'undefined') u.restrictIp = (u.role !== 'admin'); // por defecto: normal restringe, admin no
+    if(typeof u.restrictIp === 'undefined') u.restrictIp = (u.role !== 'admin');
   });
   return arr;
 }catch{return[]}};
 const saveUsers=a=>localStorage.setItem(USERS_KEY,JSON.stringify(a));
-(function ensureAdmin(){
+
+/* Garantiza seeds */
+(function ensureSeeds(){
   const a=loadUsers();
-  if(!a.some(x=>x.uLower===norm(ADMIN.u))){
-    a.push({u:ADMIN.u,p:ADMIN.p,role:'admin',uLower:norm(ADMIN.u),uid:userId(ADMIN.u),restrictIp:false});
-  }
+  SEED_USERS.forEach(s=>{
+    if(!a.some(x=>x.uid===userId(s.u))){
+      a.push({...s, uLower:norm(s.u), uid:userId(s.u)});
+    }
+  });
   saveUsers(a);
 })();
 
@@ -294,16 +309,25 @@ function showApp(){
 /* ====== Login ====== */
 (function initLogin(){
   const msg=document.getElementById('loginMsg');
-  document.getElementById('resetAll').onclick=()=>{ localStorage.removeItem(USERS_KEY); clearLogged(); saveUsers([{u:ADMIN.u,p:ADMIN.p,role:'admin',uLower:norm(ADMIN.u),uid:userId(ADMIN.u),restrictIp:false}]); msg.textContent='Acceso restablecido. Use admin.'; setTimeout(()=>msg.textContent='',3000); };
+  document.getElementById('resetAll').onclick=()=>{
+    clearLogged();
+    const seeded = SEED_USERS.map(s=>({...s,uLower:norm(s.u),uid:userId(s.u)}));
+    saveUsers(seeded);
+    msg.textContent='Acceso restablecido. Usa un admin.';
+    setTimeout(()=>msg.textContent='',3000);
+  };
   document.getElementById('loginBtn').onclick=()=>{
     const uInput=document.getElementById('loginUser').value;
     const p=document.getElementById('loginPass').value.trim();
     const uKey=userId(uInput);
     const found=loadUsers().find(x=>x.uid===uKey && x.p===p);
     if(!found){ msg.textContent='Usuario o contraseña incorrectos.'; return; }
-    // Restricción por IP (solo si el user la tiene activa y no es admin)
-    if(found.role!=='admin' && found.restrictIp && CURRENT_IP!==IP_ALLOWED){
-      msg.textContent='Usuario NORMAL con restricción: solo permitido desde IP '+IP_ALLOWED+'. Detectada: '+(CURRENT_IP||'desconocida'); return;
+    // Restricción por IP (solo si es normal y tiene restricción)
+    if(found.role!=='admin' && found.restrictIp){
+      if(!ALLOWED_IPS.includes(CURRENT_IP)){
+        msg.textContent='Usuario NORMAL con restricción: solo permitido desde IPs '+ALLOWED_IPS.join(', ')+'. Detectada: '+(CURRENT_IP||'desconocida');
+        return;
+      }
     }
     setLogged({u:found.u,role:found.role}); showApp();
   };
@@ -316,14 +340,13 @@ btnConfig.onclick=()=>{ if(getLogged()?.role!=='admin') return; renderUsers(); r
 closeCfg.onclick=()=> modal.style.display='none';
 modal.addEventListener('click',e=>{ if(e.target===modal) modal.style.display='none'; });
 
-/* ====== Crear / Eliminar usuarios ====== */
+/* ====== Crear / Eliminar usuarios (opcional UI existente) ====== */
 const roleSel = document.getElementById('newRole');
 const chkRestr = document.getElementById('newRestrict');
 roleSel.addEventListener('change',()=>{
   if(roleSel.value==='admin'){ chkRestr.checked=false; chkRestr.disabled=true; }
   else { chkRestr.disabled=false; chkRestr.checked=true; }
 });
-
 document.getElementById('btnCreateUser').onclick=()=>{
   if(getLogged()?.role!=='admin') return;
   const name=document.getElementById('newUser').value.trim();
@@ -336,54 +359,31 @@ document.getElementById('btnCreateUser').onclick=()=>{
   if(arr.some(x=>x.uid===userId(name))){ out.textContent='Ese usuario ya existe.'; return; }
   arr.push({u:name,p:pass,role:role,uLower:norm(name),uid:userId(name),restrictIp:restrict});
   saveUsers(arr);
-  out.textContent=`Usuario creado (${role==='admin'?'ADMIN, sin restr. IP':(restrict?'NORMAL, IP 190.235.163.141':'NORMAL, sin restr. IP')}).`;
+  out.textContent=`Usuario creado (${role==='admin'?'ADMIN, sin restr. IP':(restrict?'NORMAL, con restricción de IP':'NORMAL, sin restricción')}).`;
   document.getElementById('newUser').value=''; document.getElementById('newPass').value='';
   if(role!=='admin'){ chkRestr.checked=true; chkRestr.disabled=false; }
   renderUsers();
 };
-
 function deleteUser(username){
   if(getLogged()?.role!=='admin') return;
-  const arr=loadUsers();
-  const me=getLogged()?.u;
-  const unameLower=userId(username);
-
-  // Evita borrar tu propia sesión
-  if(userId(me)===unameLower){ alert('No puedes eliminar tu propia sesión activa.'); return; }
-
-  // Evita dejar sin admins
-  const admins=arr.filter(u=>u.role==='admin');
-  const isTargetAdmin=arr.find(u=>u.uid===unameLower)?.role==='admin';
-  if(isTargetAdmin && admins.length<=1){
-    alert('No se puede eliminar: es el único administrador.');
-    return;
-  }
-
+  const arr=loadUsers(); const me=getLogged()?.u; const uname=userId(username);
+  if(userId(me)===uname){ alert('No puedes eliminar tu propia sesión activa.'); return; }
+  const admins=arr.filter(u=>u.role==='admin'); const target=arr.find(u=>u.uid===uname);
+  if(target?.role==='admin' && admins.length<=1){ alert('No se puede eliminar: es el único administrador.'); return; }
   if(!confirm(`¿Eliminar el usuario "${username}"?`)) return;
-
-  const next=arr.filter(u=>u.uid!==unameLower);
-  saveUsers(next);
-  renderUsers();
+  saveUsers(arr.filter(u=>u.uid!==uname)); renderUsers();
 }
-
 function renderUsers(){
   const c=document.getElementById('usersList'); c.innerHTML='';
   loadUsers().forEach(x=>{
-    const row=document.createElement('div');
-    row.className='flex items-center justify-between bg-slate-800/50 px-3 py-2 rounded';
-    const left=document.createElement('div');
-    left.innerHTML=`<span class="font-semibold">${x.u}</span><span class="badge ml-2">${x.role}</span>`;
+    const row=document.createElement('div'); row.className='flex items-center justify-between bg-slate-800/50 px-3 py-2 rounded';
+    const left=document.createElement('div'); left.innerHTML=`<span class="font-semibold">${x.u}</span><span class="badge ml-2">${x.role}</span>`;
     const right=document.createElement('div');
-    const meta=document.createElement('span');
-    meta.className='text-xs opacity-60 mr-2';
-    meta.textContent = (x.role==='admin' || !x.restrictIp) ? 'sin restr. IP' : 'IP 190.235.163.141';
-    const del=document.createElement('button');
-    del.className='iconbtn text-xs'; del.textContent='Eliminar';
-    del.onclick=()=>deleteUser(x.u);
-    right.appendChild(meta);
-    right.appendChild(del);
-    row.appendChild(left); row.appendChild(right);
-    c.appendChild(row);
+    const meta=document.createElement('span'); meta.className='text-xs opacity-60 mr-2';
+    meta.textContent = (x.role==='admin'||!x.restrictIp)?'sin restr. IP':'IPs '+ALLOWED_IPS.join(', ');
+    const del=document.createElement('button'); del.className='iconbtn text-xs'; del.textContent='Eliminar'; del.onclick=()=>deleteUser(x.u);
+    right.appendChild(meta); right.appendChild(del);
+    row.appendChild(left); row.appendChild(right); c.appendChild(row);
   });
 }
 
