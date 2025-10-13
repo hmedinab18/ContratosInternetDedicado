@@ -228,7 +228,7 @@
     }
 
     /* =============== LOGIN =============== */
-    function showApp(){document.getElementById('loginOverlay').style.display='none';applyRoleUI();}
+    function showApp(){document.getElementById('loginOverlay').style.display='none';applyRoleUI();populatePlansSafe();}
     function requireLogin(){
       ensureDefaults();
       const userEl=document.getElementById('loginUser');
@@ -329,23 +329,39 @@
       {name:"Internet Dedicado 200 Mbps",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 1,100.00"},
       {name:"Internet Dedicado 250 Mbps",minGar:"100%",vmb:250,vminb:250,vms:250,vmins:250,tarif:"S/ 1,400.00"}
     ];
-    const planSelect=document.getElementById('planSelect');
-    PLANS.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name;planSelect.appendChild(o);});
-    function fillPlanFromSelection(){
-      const sel=planSelect.value; const p=PLANS.find(x=>x.name===sel); if(!p) return;
-      setVal('NOM_PLAN',p.name); setVal('MIN_GAR',p.minGar);
-      setVal('VEL_MAX_BAJ',String(p.vmb)); setVal('VEL_MIN_BAJ',String(p.vminb));
-      setVal('VEL_MAX_SUB',String(p.vms)); setVal('VEL_MIN_SUB',String(p.vmins));
-      setVal('TARIF_MENS',p.tarif);
-      const m=p.name.match(/(\d{2})M/); const plazo=m?m[1]:'';
-      const plazoSel=document.getElementById('PLAZO_CONT'); if(plazo && ['12','24','36'].includes(plazo)) plazoSel.value=plazo;
+
+    function populatePlansSafe(){
+      try{
+        const planSelect=document.getElementById('planSelect');
+        if(!planSelect) return;
+        // Limpia por si renderizaste de nuevo
+        planSelect.innerHTML = '<option value="">— Selecciona un plan —</option>';
+        PLANS.forEach(p=>{
+          const o=document.createElement('option');
+          o.value=p.name; o.textContent=p.name; planSelect.appendChild(o);
+        });
+        // Listeners
+        function fillPlanFromSelection(){
+          const sel=planSelect.value; const p=PLANS.find(x=>x.name===sel); if(!p) return;
+          setVal('NOM_PLAN',p.name); setVal('MIN_GAR',p.minGar);
+          setVal('VEL_MAX_BAJ',String(p.vmb)); setVal('VEL_MIN_BAJ',String(p.vminb));
+          setVal('VEL_MAX_SUB',String(p.vms)); setVal('VEL_MIN_SUB',String(p.vmins));
+          setVal('TARIF_MENS',p.tarif);
+          const m=p.name.match(/(\d{2})M/); const plazo=m?m[1]:'';
+          const plazoSel=document.getElementById('PLAZO_CONT'); if(plazo && ['12','24','36'].includes(plazo)) plazoSel.value=plazo;
+        }
+        document.getElementById('btnAuto').onclick = fillPlanFromSelection;
+        planSelect.onchange = fillPlanFromSelection;
+        document.getElementById('btnClearPlan').onclick = ()=>{
+          ['NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS'].forEach(id=>setVal(id,''));
+          document.getElementById('PLAZO_CONT').value=''; planSelect.value='';
+        };
+      }catch(e){
+        console.error('Error cargando planes', e);
+        const st = document.getElementById('status');
+        if(st) st.textContent = 'Error cargando planes. Recarga la página.';
+      }
     }
-    document.getElementById('btnAuto').addEventListener('click',fillPlanFromSelection);
-    planSelect.addEventListener('change',fillPlanFromSelection);
-    document.getElementById('btnClearPlan').addEventListener('click',()=>{
-      ['NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS'].forEach(id=>setVal(id,''));
-      document.getElementById('PLAZO_CONT').value=''; planSelect.value='';
-    });
 
     /* =============== RECOLECCIÓN =============== */
     function gatherData(){
@@ -391,24 +407,31 @@
     };
 
     async function fillOne(pdfFileName,map){
-      const status=document.getElementById('status'); status.textContent='Cargando '+pdfFileName+'...';
-      const resp=await fetch(pdfFileName); if(!resp.ok) throw new Error('No se pudo cargar '+pdfFileName);
-      const arr=await resp.arrayBuffer();
-      const pdfDoc=await PDFLib.PDFDocument.load(arr);
-      const form=pdfDoc.getForm();
-      const data=gatherData();
-      let filled=0;
-      for(const [pdfField,htmlId] of Object.entries(map)){
-        try{const tf=form.getTextField(pdfField); tf.setText(data[htmlId]??''); filled++; }
-        catch(e){ console.warn('Campo faltante en', pdfFileName, ':', pdfField); }
+      const status=document.getElementById('status');
+      try{
+        status.textContent='Cargando '+pdfFileName+'...';
+        const resp=await fetch(pdfFileName);
+        if(!resp.ok) throw new Error('No se pudo cargar (¿está en la misma carpeta?)');
+        const arr=await resp.arrayBuffer();
+        const pdfDoc=await PDFLib.PDFDocument.load(arr);
+        const form=pdfDoc.getForm();
+        const data=gatherData();
+        let filled=0;
+        for(const [pdfField,htmlId] of Object.entries(map)){
+          try{const tf=form.getTextField(pdfField); tf.setText(data[htmlId]??''); filled++; }
+          catch(e){ console.warn('Campo faltante en', pdfFileName, ':', pdfField); }
+        }
+        form.flatten();
+        const bytes=await pdfDoc.save();
+        const blob=new Blob([bytes],{type:'application/pdf'});
+        const url=URL.createObjectURL(blob);
+        const a=document.getElementById('downloadLink');
+        a.href=url; a.download=pdfFileName; a.classList.remove('hidden'); a.click();
+        status.textContent='Generado '+pdfFileName+' ('+filled+' campos).';
+      }catch(err){
+        console.error(err);
+        status.textContent='Error con '+pdfFileName+': '+err.message;
       }
-      form.flatten();
-      const bytes=await pdfDoc.save();
-      const blob=new Blob([bytes],{type:'application/pdf'});
-      const url=URL.createObjectURL(blob);
-      const a=document.getElementById('downloadLink');
-      a.href=url; a.download=pdfFileName; a.classList.remove('hidden'); a.click();
-      status.textContent='Generado '+pdfFileName+' ('+filled+' campos).';
     }
 
     async function exportAll(){
@@ -420,4 +443,3 @@
   </script>
 </body>
 </html>
-
