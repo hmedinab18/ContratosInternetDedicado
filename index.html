@@ -9,7 +9,7 @@
   <style>
     :root{--accent:#0ea5e9;--accent2:#22c55e;}
     .brand-gradient{background:linear-gradient(90deg,var(--accent),var(--accent2));}
-    .input{background-color:#111827!important;border:1px solid #334155!important;border-radius:10px!important;padding:.7rem .9rem!important;width:100%!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;font-weight:600!important;caret-color:#22d3ee!important;transition:all .15s ease-in-out;}
+    .input{background-color:#111827!important;border:1px solid #334155!important;border-radius:10px!important;padding:.7rem .9rem!important;width:100%!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;font-weight:600!important;caret-color:#22d3ee!important;transition:all .15s;}
     .input::placeholder{color:#9ca3af;opacity:1;}
     .input:focus{outline:none;border-color:#22d3ee!important;box-shadow:0 0 0 2px #22d3ee55;background-color:#0f172a!important;}
     .btn{background:var(--accent);color:#001014;font-weight:700;border-radius:14px;padding:.7rem 1rem;text-align:center}
@@ -183,15 +183,12 @@
         </div>
       </div>
 
-      <!-- Sidebar -->
+      <!-- Sidebar: UN SOLO BOTÓN -->
       <aside class="space-y-6">
         <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
           <h2 class="text-lg font-semibold mb-3">Exportar PDFs</h2>
           <div class="flex flex-col gap-3">
-            <button id="btnArr" class="btn">Exportar Arrendamiento.pdf</button>
-            <button id="btnSup" class="btn">Exportar Servicios Suplementarios.pdf</button>
-            <button id="btnTar" class="btn">Exportar Tarifas y Servicios.pdf</button>
-            <button id="btnAll" class="btn alt">Exportar TODO</button>
+            <button id="btnExportAll" class="btn w-full">Exportar PDFs</button>
             <a id="downloadLink" class="hidden btn" download>Descargar</a>
             <p id="status" class="text-sm opacity-80"></p>
           </div>
@@ -207,7 +204,6 @@
     const LOG_KEY='contratos_login_ok';
     const USER_KEY='contratos_login_user';
     const DEFAULT_ADMIN={u:'mob_hmedinab',p:'adminMobilenet2025',role:'admin'};
-    // (Opcional) estándar por defecto:
     const DEFAULT_USER={u:'usuario',p:'usuario123',role:'standard'};
 
     function loadUsers(){try{return JSON.parse(localStorage.getItem(USERS_KEY))||[]}catch{return []}}
@@ -415,14 +411,13 @@
       status.textContent='Generado '+pdfFileName+' ('+filled+' campos).';
     }
 
-    document.getElementById('btnArr').addEventListener('click',()=>fillOne('Arrendamiento.pdf',MAP_ARR));
-    document.getElementById('btnSup').addEventListener('click',()=>fillOne('Servicios Suplementarios.pdf',MAP_SUP));
-    document.getElementById('btnTar').addEventListener('click',()=>fillOne('Tarifas y Servicios.pdf',MAP_TAR));
-    document.getElementById('btnAll').addEventListener('click',async()=>{
+    async function exportAll(){
       await fillOne('Arrendamiento.pdf',MAP_ARR);
       await fillOne('Servicios Suplementarios.pdf',MAP_SUP);
       await fillOne('Tarifas y Servicios.pdf',MAP_TAR);
-    });
+    }
+    document.getElementById('btnExportAll').addEventListener('click',exportAll);
   </script>
 </body>
 </html>
+
