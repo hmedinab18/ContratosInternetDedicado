@@ -192,11 +192,10 @@ table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #334155;
             <option value="12">12</option><option value="24">24</option><option value="36">36</option>
           </select>
         </div>
-        <!-- (Se eliminaron los botones Autocompletar / Limpiar como pediste) -->
       </div>
     </div>
 
-    <!-- Sidebar: UN SOLO BOTÓN -->
+    <!-- Sidebar -->
     <aside class="space-y-6">
       <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
         <h2 class="text-lg font-semibold mb-3">Exportar PDFs</h2>
@@ -237,7 +236,7 @@ const setLogged=u=>{localStorage.setItem(LOG_KEY,'1'); localStorage.setItem(USER
 const getLogged=()=>{try{return JSON.parse(localStorage.getItem(USER_KEY))}catch{return null}};
 const clearLogged=()=>{localStorage.removeItem(LOG_KEY); localStorage.removeItem(USER_KEY)};
 
-/* ====== IP pública (solo para rol normal) ====== */
+/* ====== IP pública (para rol normal) ====== */
 let CURRENT_IP=null;
 (async()=>{
   try{
@@ -264,7 +263,10 @@ function applyRoleUI(){
 function showApp(){
   document.getElementById('loginOverlay').style.display='none';
   applyRoleUI();
-  populatePlans(); // <- siempre rellenar planes al mostrar
+  populatePlans();
+  // enganchar autocompletar
+  const sel=document.getElementById('planSelect');
+  if(sel){ sel.removeEventListener('change',fillPlanFromSelection); sel.addEventListener('change',fillPlanFromSelection); }
 }
 
 /* Evitar sesiones corruptas */
@@ -344,7 +346,7 @@ const normalizeMoneyInput=v=>{if(!v)return''; v=String(v).replace(/[^0-9,\.]/g,'
 const byId=id=>document.getElementById(id);
 const setVal=(id,val)=>{const el=byId(id); if(el) el.value=val??''};
 
-/* ====== Planes ====== */
+/* ====== Planes y autocompletar ====== */
 const PLANS=[
   {name:"Internet Fibra Plus 100 Mbps - 36M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 270.00"},
   {name:"Internet Fibra Plus 200 Mbps - 36M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 360.00"},
@@ -368,7 +370,21 @@ function populatePlans(){
   try{ PLANS.forEach(p=>{const o=document.createElement('option'); o.value=p.name; o.textContent=p.name; sel.appendChild(o)}); }
   catch(e){ const st=document.getElementById('status'); if(st) st.textContent='Error cargando planes: '+e.message; }
 }
-document.addEventListener('DOMContentLoaded',populatePlans);
+function fillPlanFromSelection(){
+  const sel=document.getElementById('planSelect'); if(!sel) return;
+  const p=PLANS.find(x=>x.name===sel.value); if(!p) return;
+  setVal('NOM_PLAN',p.name); setVal('MIN_GAR',p.minGar);
+  setVal('VEL_MAX_BAJ',String(p.vmb)); setVal('VEL_MIN_BAJ',String(p.vminb));
+  setVal('VEL_MAX_SUB',String(p.vms)); setVal('VEL_MIN_SUB',String(p.vmins));
+  setVal('TARIF_MENS',p.tarif);
+  const m=p.name.match(/(\d{2})M/); const plazo=m?m[1]:'';
+  const s=document.getElementById('PLAZO_CONT'); if(plazo&&['12','24','36'].includes(plazo)) s.value=plazo;
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  populatePlans();
+  const sel=document.getElementById('planSelect');
+  if(sel){ sel.addEventListener('change',fillPlanFromSelection); }
+});
 
 /* ====== PDFs ====== */
 function gatherData(){
