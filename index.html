@@ -14,10 +14,13 @@
 .input:focus{outline:none;border-color:#22d3ee!important;box-shadow:0 0 0 2px #22d3ee55;background:#0f172a!important}
 .btn{background:var(--accent);color:#001014;font-weight:700;border-radius:14px;padding:.7rem 1rem;text-align:center}
 .btn.alt{background:#334155;color:#e5e7eb}
+.btn.danger{background:#ef4444;color:#fff}
 #loginOverlay{position:fixed;inset:0;background:rgba(2,6,23,.9);display:flex;align-items:center;justify-content:center;z-index:50}
 .modal{position:fixed;inset:0;background:rgba(2,6,23,.85);display:none;align-items:center;justify-content:center;z-index:60}
 .badge{font-size:.75rem;padding:.15rem .5rem;border-radius:999px;background:#374151;color:#e5e7eb;font-weight:700}
 table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #334155;padding:.5rem;text-align:left}
+.iconbtn{padding:.25rem .5rem;border-radius:.5rem;background:#1f2937}
+.iconbtn:hover{background:#111827}
 </style>
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100">
@@ -73,7 +76,8 @@ table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #334155;
         </div>
 
         <h3 class="font-semibold mt-6 mb-2">Usuarios registrados</h3>
-        <div id="usersList" class="text-sm space-y-1"></div>
+        <div id="usersList" class="text-sm space-y-2"></div>
+        <p class="text-xs opacity-70 mt-2">Tip: no puedes eliminar tu propia sesión ni dejar el sistema sin administradores.</p>
       </div>
 
       <div>
@@ -264,7 +268,6 @@ function showApp(){
   document.getElementById('loginOverlay').style.display='none';
   applyRoleUI();
   populatePlans();
-  // enganchar autocompletar
   const sel=document.getElementById('planSelect');
   if(sel){ sel.removeEventListener('change',fillPlanFromSelection); sel.addEventListener('change',fillPlanFromSelection); }
 }
@@ -299,7 +302,7 @@ btnConfig.onclick=()=>{ if(getLogged()?.role!=='admin') return; renderUsers(); r
 closeCfg.onclick=()=> modal.style.display='none';
 modal.addEventListener('click',e=>{ if(e.target===modal) modal.style.display='none'; });
 
-/* ====== Crear usuarios (normal/admin) ====== */
+/* ====== Crear / Eliminar usuarios ====== */
 document.getElementById('btnCreateUser').onclick=()=>{
   if(getLogged()?.role!=='admin') return;
   const name=document.getElementById('newUser').value.trim();
@@ -315,12 +318,49 @@ document.getElementById('btnCreateUser').onclick=()=>{
   document.getElementById('newUser').value=''; document.getElementById('newPass').value='';
   renderUsers();
 };
+
+function deleteUser(username){
+  if(getLogged()?.role!=='admin') return;
+  const arr=loadUsers();
+  const me=getLogged()?.u;
+  const uname=username;
+  const unameLower=norm(uname);
+
+  // Evita borrar tu propia sesión
+  if(norm(me)===unameLower){ alert('No puedes eliminar tu propia sesión activa.'); return; }
+
+  // Evita dejar sin admins
+  const admins=arr.filter(u=>u.role==='admin');
+  const isTargetAdmin=arr.find(u=>u.uLower===unameLower)?.role==='admin';
+  if(isTargetAdmin && admins.length<=1){
+    alert('No se puede eliminar: es el único administrador.');
+    return;
+  }
+
+  if(!confirm(`¿Eliminar el usuario "${uname}"?`)) return;
+
+  const next=arr.filter(u=>u.uLower!==unameLower);
+  saveUsers(next);
+  renderUsers();
+}
+
 function renderUsers(){
   const c=document.getElementById('usersList'); c.innerHTML='';
   loadUsers().forEach(x=>{
     const row=document.createElement('div');
     row.className='flex items-center justify-between bg-slate-800/50 px-3 py-2 rounded';
-    row.innerHTML=`<div><span class="font-semibold">${x.u}</span><span class="badge ml-2">${x.role}</span></div><span class="text-xs opacity-60">${x.role==='admin'?'sin restr. IP':'IP 190.235.163.141'}</span>`;
+    const left=document.createElement('div');
+    left.innerHTML=`<span class="font-semibold">${x.u}</span><span class="badge ml-2">${x.role}</span>`;
+    const right=document.createElement('div');
+    const meta=document.createElement('span');
+    meta.className='text-xs opacity-60 mr-2';
+    meta.textContent = (x.role==='admin'?'sin restr. IP':'IP 190.235.163.141');
+    const del=document.createElement('button');
+    del.className='iconbtn text-xs'; del.textContent='Eliminar';
+    del.onclick=()=>deleteUser(x.u);
+    right.appendChild(meta);
+    right.appendChild(del);
+    row.appendChild(left); row.appendChild(right);
     c.appendChild(row);
   });
 }
@@ -397,7 +437,7 @@ const MAP_TAR={'CARGO FIJO':'TARIF_MENS','CARGO':'CARGO_FIRM','CORREO':'CORREO',
 
 async function fillOne(pdfFileName,map){
   const status=document.getElementById('status'); status.textContent='Cargando '+pdfFileName+'...';
-  const resp=await fetch('/'+pdfFileName,{cache:'no-store'});  // /public en Vercel
+  const resp=await fetch('/'+pdfFileName,{cache:'no-store'});
   if(!resp.ok){ status.textContent='No se pudo cargar '+pdfFileName; return; }
   const arr=await resp.arrayBuffer();
   const pdfDoc=await PDFLib.PDFDocument.load(arr);
