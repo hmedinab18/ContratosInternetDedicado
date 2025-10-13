@@ -26,9 +26,15 @@
     .btn { background: var(--accent); color:#001014; font-weight:700; border-radius:14px; padding:.7rem 1rem; text-align:center }
     .btn.alt { background:#334155; color:#e5e7eb }
     #loginOverlay{ position: fixed; inset: 0; background: rgba(2,6,23,.9); display:flex; align-items:center; justify-content:center; z-index:50; }
+    .modal{ position:fixed; inset:0; background:rgba(2,6,23,.85); display:none; align-items:center; justify-content:center; z-index:60; }
+    .badge{font-size:.75rem;padding:.15rem .5rem;border-radius:999px;background:#374151;color:#e5e7eb;font-weight:700}
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border-bottom: 1px solid #334155; padding: .5rem; text-align: left; }
   </style>
 </head>
 <body class="min-h-screen bg-slate-950 text-slate-100">
+
+  <!-- LOGIN -->
   <div id="loginOverlay">
     <div class="w-[95%] max-w-md bg-slate-900/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-md shadow">
       <h2 class="text-xl font-bold mb-4">Acceso</h2>
@@ -38,21 +44,76 @@
         <button id="loginBtn" class="btn w-full">Ingresar</button>
         <p id="loginMsg" class="text-sm text-red-400 h-5"></p>
         <p class="text-xs opacity-70">*Nota: acceso de conveniencia (cliente). No usar para datos sensibles.</p>
+        <p id="ipInfo" class="text-xs opacity-70 h-4"></p>
       </div>
     </div>
   </div>
 
+  <!-- HEADER -->
   <header class="brand-gradient p-5 shadow-xl">
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-3">
       <h1 class="text-2xl font-bold">Contrato Acceso Dedicado a Internet</h1>
-      <button id="logoutBtn" class="text-sm px-3 py-1 rounded bg-black/20 hover:bg-black/30">Salir</button>
+      <div class="flex items-center gap-2">
+        <span id="whoami" class="text-sm px-2 py-1 rounded bg-black/20"></span>
+        <button id="btnConfig" class="text-sm px-3 py-1 rounded bg-black/20 hover:bg-black/30 hidden">Configuración</button>
+        <button id="logoutBtn" class="text-sm px-3 py-1 rounded bg-black/20 hover:bg-black/30">Salir</button>
+      </div>
     </div>
   </header>
 
+  <!-- MODAL CONFIG (solo admin) -->
+  <div id="configModal" class="modal">
+    <div class="w-[95%] max-w-5xl bg-slate-900/90 border border-slate-700 rounded-2xl p-6 backdrop-blur-md shadow relative">
+      <button id="closeConfig" class="absolute right-3 top-3 px-2 py-1 bg-slate-800/70 rounded">✕</button>
+      <h2 class="text-xl font-bold mb-4">Configuración (Admin)</h2>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <!-- Crear usuario -->
+        <div>
+          <h3 class="font-semibold mb-2">Crear nuevo usuario (standard)</h3>
+          <div class="grid sm:grid-cols-3 gap-3">
+            <input id="newUser" class="input" placeholder="Usuario" />
+            <input id="newPass" class="input" type="password" placeholder="Contraseña" />
+            <select id="newRole" class="input" disabled>
+              <option value="standard" selected>standard (solo IP 190.235.163.141)</option>
+            </select>
+          </div>
+          <div class="flex gap-3 mt-3">
+            <button id="btnCreateUser" class="btn">Crear usuario</button>
+            <p id="userMsg" class="text-sm opacity-80"></p>
+          </div>
+
+          <h3 class="font-semibold mt-6 mb-2">Usuarios registrados</h3>
+          <div id="usersList" class="text-sm space-y-1"></div>
+        </div>
+
+        <!-- Registros -->
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold mb-2">Registros de contratos</h3>
+            <button id="clearLogs" class="btn alt text-xs">Limpiar registros</button>
+          </div>
+          <div class="max-h-[350px] overflow-auto border border-slate-700/70 rounded-lg">
+            <table class="text-sm">
+              <thead class="bg-slate-800/80 sticky top-0">
+                <tr>
+                  <th>Fecha</th><th>Usuario</th><th>RUC</th><th>Razón Social</th><th>RL</th><th>Teléfono</th><th>Correo</th>
+                </tr>
+              </thead>
+              <tbody id="logsBody"></tbody>
+            </table>
+          </div>
+          <p class="text-xs opacity-70 mt-2">Solo visible para el administrador.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
   <main class="max-w-6xl mx-auto p-6 space-y-8">
     <section class="grid md:grid-cols-3 gap-6">
       <div class="md:col-span-2 space-y-6">
-        <!-- Datos -->
+        <!-- 1) Datos del Representante Legal -->
         <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
           <h2 class="text-xl font-semibold mb-3">1) Datos del Representante Legal</h2>
           <div class="grid sm:grid-cols-2 gap-3">
@@ -74,7 +135,7 @@
           </div>
         </div>
 
-        <!-- Contacto -->
+        <!-- 2) Contacto de Instalación -->
         <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
           <h2 class="text-xl font-semibold mb-3">2) Contacto de Instalación</h2>
           <div class="grid sm:grid-cols-2 gap-3">
@@ -86,7 +147,7 @@
           </div>
         </div>
 
-        <!-- Fecha -->
+        <!-- 3) Fecha de Firma -->
         <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
           <h2 class="text-xl font-semibold mb-3">3) Fecha de Firma</h2>
           <div class="grid sm:grid-cols-3 gap-3">
@@ -96,7 +157,7 @@
           </div>
         </div>
 
-        <!-- Firmante -->
+        <!-- 4) Firmante -->
         <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
           <h2 class="text-xl font-semibold mb-3">4) Firmante</h2>
           <div class="grid sm:grid-cols-2 gap-3">
@@ -105,7 +166,7 @@
           </div>
         </div>
 
-        <!-- Suplementarios -->
+        <!-- 5) Servicios Suplementarios -->
         <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
           <h2 class="text-xl font-semibold mb-3">5) Servicios Suplementarios</h2>
           <div class="grid sm:grid-cols-3 gap-3">
@@ -119,7 +180,7 @@
           </div>
         </div>
 
-        <!-- Tarifas y Servicios -->
+        <!-- 6) Tarifas y Servicios -->
         <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
           <h2 class="text-xl font-semibold mb-3">6) Tarifas y Servicios</h2>
           <div class="grid sm:grid-cols-2 gap-3 mb-3">
@@ -152,14 +213,12 @@
         </div>
       </div>
 
+      <!-- Sidebar: UN SOLO BOTÓN -->
       <aside class="space-y-6">
         <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
           <h2 class="text-lg font-semibold mb-3">Exportar PDFs</h2>
           <div class="flex flex-col gap-3">
-            <button id="btnArr" class="btn">Exportar Arrendamiento.pdf</button>
-            <button id="btnSup" class="btn">Exportar Servicios Suplementarios.pdf</button>
-            <button id="btnTar" class="btn">Exportar Tarifas y Servicios.pdf</button>
-            <button id="btnAll" class="btn alt">Exportar TODO</button>
+            <button id="btnAll" class="btn w-full">GENERAR CONTRATOS</button>
             <a id="downloadLink" class="hidden btn" download>Descargar</a>
             <p id="status" class="text-sm opacity-80"></p>
           </div>
@@ -170,28 +229,130 @@
 
   <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
   <script>
-    // --- Login ---
-    const CRED = { user: 'mob_hmedinab', pass: 'adminMobilenet2025' };
-    const LOG_KEY = 'contratos_login_ok';
-    function showApp(){ document.getElementById('loginOverlay').style.display='none'; }
+    /* ==================== Autenticación / Usuarios ==================== */
+    const USERS_KEY='contratos_users';
+    const LOG_KEY='contratos_login_ok';
+    const USER_KEY='contratos_login_user';
+    const LOGS_KEY='contratos_registros';
+    const ADMIN = { u:'mob_hmedinab', p:'adminMobilenet2025', role:'admin' };
+    const IP_ALLOWED='190.235.163.141';
+
+    function loadUsers(){ try{ return JSON.parse(localStorage.getItem(USERS_KEY)) || [] }catch{ return [] } }
+    function saveUsers(arr){ localStorage.setItem(USERS_KEY, JSON.stringify(arr)) }
+    function ensureAdmin(){
+      let arr=loadUsers();
+      if(!arr.some(x=>x&&x.u===ADMIN.u)){ arr.push(ADMIN); saveUsers(arr); }
+    }
+    ensureAdmin();
+
+    let CURRENT_IP=null;
+    async function fetchIP(){
+      try{
+        const ctrl=new AbortController(); setTimeout(()=>ctrl.abort(), 5000);
+        const r=await fetch('https://api.ipify.org?format=json',{signal:ctrl.signal});
+        const j=await r.json(); CURRENT_IP=j.ip||null;
+        document.getElementById('ipInfo').textContent='Tu IP pública: '+CURRENT_IP;
+      }catch{
+        document.getElementById('ipInfo').textContent='No se pudo detectar la IP pública.';
+        CURRENT_IP=null;
+      }
+    }
+    fetchIP();
+
+    function showApp(){
+      document.getElementById('loginOverlay').style.display='none';
+      applyRoleUI();
+      populatePlans();
+    }
+
+    function setLogged(user){ localStorage.setItem(LOG_KEY,'1'); localStorage.setItem(USER_KEY, JSON.stringify(user)); }
+    function getLogged(){ try{ return JSON.parse(localStorage.getItem(USER_KEY)) }catch{ return null } }
+    function clearLogged(){ localStorage.removeItem(LOG_KEY); localStorage.removeItem(USER_KEY); }
+
     function requireLogin(){
-      if(localStorage.getItem(LOG_KEY)==='1'){ showApp(); return; }
+      if(localStorage.getItem(LOG_KEY)==='1' && getLogged()){ showApp(); return; }
       const btn = document.getElementById('loginBtn');
       const msg = document.getElementById('loginMsg');
       btn.addEventListener('click', ()=>{
         const u = document.getElementById('loginUser').value.trim();
-        const p = document.getElementById('loginPass').value;
-        if(u===CRED.user && p===CRED.pass){
-          localStorage.setItem(LOG_KEY,'1'); showApp();
-        }else{ msg.textContent = 'Usuario o contraseña incorrectos.'; }
+        const p = document.getElementById('loginPass').value.trim();
+        const all = loadUsers();
+        const found = all.find(x=>x.u===u && x.p===p);
+        if(!found){ msg.textContent='Usuario o contraseña incorrectos.'; return; }
+        if(found.role!=='admin'){
+          if(CURRENT_IP!==IP_ALLOWED){
+            msg.textContent='Acceso permitido solo desde la IP '+IP_ALLOWED+'. IP detectada: '+(CURRENT_IP||'desconocida');
+            return;
+          }
+        }
+        setLogged({u:found.u, role:found.role});
+        showApp();
       });
     }
     requireLogin();
-    document.getElementById('logoutBtn').addEventListener('click', ()=>{
-      localStorage.removeItem(LOG_KEY); location.reload();
+
+    document.getElementById('logoutBtn').addEventListener('click', ()=>{ clearLogged(); location.reload(); });
+
+    /* ==================== Header: rol y config ==================== */
+    const whoami=document.getElementById('whoami');
+    const btnConfig=document.getElementById('btnConfig');
+    const modal=document.getElementById('configModal');
+    const closeCfg=document.getElementById('closeConfig');
+
+    function applyRoleUI(){
+      const me=getLogged(); if(!me) return;
+      whoami.textContent=`Sesión: ${me.u} `;
+      const b=document.createElement('span'); b.className='badge ml-2'; b.textContent=me.role; whoami.appendChild(b);
+      if(me.role==='admin') btnConfig.classList.remove('hidden'); else btnConfig.classList.add('hidden');
+    }
+
+    btnConfig.addEventListener('click',()=>{ const me=getLogged(); if(!me||me.role!=='admin') return; renderUsers(); renderLogs(); modal.style.display='flex'; });
+    closeCfg.addEventListener('click',()=> modal.style.display='none');
+    modal.addEventListener('click',e=>{ if(e.target===modal) modal.style.display='none'; });
+
+    /* ==================== Crear usuarios standard ==================== */
+    document.getElementById('btnCreateUser').addEventListener('click', ()=>{
+      const me=getLogged(); if(!me||me.role!=='admin') return;
+      const u=document.getElementById('newUser').value.trim();
+      const p=document.getElementById('newPass').value.trim();
+      const msg=document.getElementById('userMsg');
+      if(!u || !p){ msg.textContent='Completa usuario y contraseña.'; return; }
+      const arr=loadUsers();
+      if(arr.some(x=>x.u===u)){ msg.textContent='Ese usuario ya existe.'; return; }
+      arr.push({u,p,role:'standard'}); saveUsers(arr);
+      msg.textContent='Usuario creado (solo IP '+IP_ALLOWED+').';
+      document.getElementById('newUser').value=''; document.getElementById('newPass').value='';
+      renderUsers();
     });
 
-    // --- Utilidades ---
+    function renderUsers(){
+      const cont=document.getElementById('usersList'); cont.innerHTML='';
+      const arr=loadUsers();
+      arr.forEach(x=>{
+        const row=document.createElement('div');
+        row.className='flex items-center justify-between bg-slate-800/50 px-3 py-2 rounded';
+        row.innerHTML=`<div><span class="font-semibold">${x.u}</span><span class="badge ml-2">${x.role}</span></div><span class="text-xs opacity-60">${x.role==='admin'?'sin restr. IP':'IP '+IP_ALLOWED}</span>`;
+        cont.appendChild(row);
+      });
+    }
+
+    /* ==================== Registros de contratos ==================== */
+    function loadLogs(){ try{ return JSON.parse(localStorage.getItem(LOGS_KEY)) || [] }catch{ return [] } }
+    function saveLogs(a){ localStorage.setItem(LOGS_KEY, JSON.stringify(a)); }
+    function addLog(rec){
+      const a=loadLogs(); a.unshift(rec); saveLogs(a);
+    }
+    function renderLogs(){
+      const tbody=document.getElementById('logsBody'); tbody.innerHTML='';
+      loadLogs().forEach(r=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `<td>${r.date}</td><td>${r.user}</td><td>${r.RUC}</td><td>${r.RAZON_SOCIAL}</td><td>${r.RL}</td><td>${r.TELEFONO}</td><td>${r.CORREO}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    document.getElementById('clearLogs').addEventListener('click', ()=>{ saveLogs([]); renderLogs(); });
+
+    /* ==================== Utilidades ==================== */
     const solesFmt = new Intl.NumberFormat('es-PE', { style:'currency', currency:'PEN', minimumFractionDigits:2 });
     function normalizeMoneyInput(v){
       if(!v) return '';
@@ -202,11 +363,10 @@
     }
     function attachMoneyFormatter(id){ const el=document.getElementById(id); el.addEventListener('blur',()=>{ el.value=normalizeMoneyInput(el.value); }); }
     ['SUB_TOTAL','CONT_TOTAL','TARIF_MENS'].forEach(attachMoneyFormatter);
-
     function byId(id){ return document.getElementById(id); }
     function setVal(id, val){ const el=byId(id); if(el) el.value = val ?? ""; }
 
-    // --- Planes ---
+    /* ==================== Planes ==================== */
     const PLANS = [
       { name:"Internet Fibra Plus 100 Mbps - 36M", minGar:"100%", vmb:100, vminb:100, vms:100, vmins:100, tarif:"S/ 270.00" },
       { name:"Internet Fibra Plus 200 Mbps - 36M", minGar:"100%", vmb:200, vminb:200, vms:200, vmins:200, tarif:"S/ 360.00" },
@@ -223,8 +383,12 @@
       { name:"Internet Dedicado 200 Mbps", minGar:"100%", vmb:200, vminb:200, vms:200, vmins:200, tarif:"S/ 1,100.00" },
       { name:"Internet Dedicado 250 Mbps", minGar:"100%", vmb:250, vminb:250, vms:250, vmins:250, tarif:"S/ 1,400.00" }
     ];
-    const planSelect = document.getElementById('planSelect');
-    PLANS.forEach(p=>{ const opt=document.createElement('option'); opt.value=p.name; opt.textContent=p.name; planSelect.appendChild(opt); });
+    function populatePlans(){
+      const select=document.getElementById('planSelect');
+      if(!select) return;
+      select.innerHTML='<option value="">— Selecciona un plan —</option>';
+      PLANS.forEach(p=>{ const opt=document.createElement('option'); opt.value=p.name; opt.textContent=p.name; select.appendChild(opt); });
+    }
     function fillPlanFromSelection(){
       const sel = planSelect.value; const p = PLANS.find(x=>x.name===sel); if(!p) return;
       setVal('NOM_PLAN', p.name); setVal('MIN_GAR', p.minGar);
@@ -235,6 +399,7 @@
       const plazoSel = document.getElementById('PLAZO_CONT');
       if(plazo && ['12','24','36'].includes(plazo)) plazoSel.value = plazo;
     }
+    const planSelect = document.getElementById('planSelect');
     document.getElementById('btnAuto').addEventListener('click', fillPlanFromSelection);
     planSelect.addEventListener('change', fillPlanFromSelection);
     document.getElementById('btnClearPlan').addEventListener('click', ()=>{
@@ -243,7 +408,7 @@
       planSelect.value='';
     });
 
-    // --- Recolección de datos ---
+    /* ==================== Recolección ==================== */
     function gatherData(){
       const ids = [
         'RAZON_SOCIAL','RUC','DIRECCION','NUMERO_DE_CALLE','DPTO_INT','URB','DISTRITO','CIUDAD',
@@ -257,13 +422,13 @@
       ids.forEach(id=>{
         let v = byId(id)?.value ?? '';
         if(id==='SUB_TOTAL' || id==='CONT_TOTAL' || id==='TARIF_MENS') v = normalizeMoneyInput(v);
-        if(id==='PLAZO_CONT'){ v = String(v).trim(); } // 12/24/36
+        if(id==='PLAZO_CONT'){ v = String(v).trim(); }
         data[id]=v;
       });
       return data;
     }
 
-    // --- Mapeos por documento ---
+    /* ==================== Mapeos PDF ==================== */
     const MAP_ARR = {
       'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE',
       'DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD',
@@ -304,19 +469,34 @@
       const blob = new Blob([bytes], {type:'application/pdf'});
       const url = URL.createObjectURL(blob);
       const a = document.getElementById('downloadLink');
-      a.href = url; a.download = pdfFileName; // mismo nombre
+      a.href = url; a.download = pdfFileName;
       a.classList.remove('hidden'); a.click();
       status.textContent = 'Generado ' + pdfFileName + ' (' + filled + ' campos).';
     }
 
-    document.getElementById('btnArr').addEventListener('click', ()=> fillOne('Arrendamiento.pdf', MAP_ARR));
-    document.getElementById('btnSup').addEventListener('click', ()=> fillOne('Servicios Suplementarios.pdf', MAP_SUP));
-    document.getElementById('btnTar').addEventListener('click', ()=> fillOne('Tarifas y Servicios.pdf', MAP_TAR));
-    document.getElementById('btnAll').addEventListener('click', async ()=>{
+    async function exportAll(){
+      const me=getLogged()||{u:'(desconocido)'};
+      // 1) Generar los 3 PDFs
       await fillOne('Arrendamiento.pdf', MAP_ARR);
       await fillOne('Servicios Suplementarios.pdf', MAP_SUP);
       await fillOne('Tarifas y Servicios.pdf', MAP_TAR);
-    });
+      // 2) Registrar (RUC, RAZON SOCIAL, RL, TELEFONO, CORREO)
+      const d=gatherData();
+      addLog({
+        date: new Date().toLocaleString(),
+        user: me.u,
+        RUC: d.RUC || '',
+        RAZON_SOCIAL: d.RAZON_SOCIAL || '',
+        RL: d.RL || '',
+        TELEFONO: d.TELEFONO || '',
+        CORREO: d.CORREO || ''
+      });
+      const status=byId('status');
+      status.textContent = (status.textContent ? status.textContent+' • ' : '') + 'Registro guardado.';
+      // Si admin tiene abierto el modal, refrescar tabla
+      if(modal.style.display==='flex') renderLogs();
+    }
+    document.getElementById('btnAll').addEventListener('click', exportAll);
   </script>
 </body>
 </html>
