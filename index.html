@@ -228,7 +228,11 @@
     }
 
     /* =============== LOGIN =============== */
-    function showApp(){document.getElementById('loginOverlay').style.display='none';applyRoleUI();populatePlansSafe();}
+    function showApp(){
+      document.getElementById('loginOverlay').style.display='none';
+      applyRoleUI();
+      populatePlansSafe(); // <-- repoblar siempre
+    }
     function requireLogin(){
       ensureDefaults();
       const userEl=document.getElementById('loginUser');
@@ -288,7 +292,7 @@
       const u=document.getElementById('newUser').value.trim();
       const p=document.getElementById('newPass').value.trim();
       let role=document.getElementById('newRole').value;
-      if(role!=='standard') role='standard'; // forzar standard
+      if(role!=='standard') role='standard';
       if(!u||!p){ msg.textContent='Completa usuario y contraseña.'; return; }
       const arr=loadUsers();
       if(arr.some(x=>x.u===u)){ msg.textContent='Ese usuario ya existe.'; return; }
@@ -308,7 +312,6 @@
     }
     function attachMoneyFormatter(id){ const el=document.getElementById(id); el.addEventListener('blur',()=>{ el.value=normalizeMoneyInput(el.value); }); }
     ['SUB_TOTAL','CONT_TOTAL','TARIF_MENS'].forEach(attachMoneyFormatter);
-
     function byId(id){return document.getElementById(id)}
     function setVal(id,val){const el=byId(id); if(el) el.value=val??""}
 
@@ -330,17 +333,28 @@
       {name:"Internet Dedicado 250 Mbps",minGar:"100%",vmb:250,vminb:250,vms:250,vmins:250,tarif:"S/ 1,400.00"}
     ];
 
+    // Cargar planes al iniciar el DOM y tras login
+    window.addEventListener('DOMContentLoaded', populatePlansSafe);
+
     function populatePlansSafe(){
       try{
-        const planSelect=document.getElementById('planSelect');
+        const planSelect = document.getElementById('planSelect');
+        const statusEl   = document.getElementById('status');
         if(!planSelect) return;
-        // Limpia por si renderizaste de nuevo
+
+        // Reset y opción por defecto
         planSelect.innerHTML = '<option value="">— Selecciona un plan —</option>';
+
+        if(!Array.isArray(PLANS) || PLANS.length===0){
+          if(statusEl) statusEl.textContent = 'No hay planes cargados.';
+          return;
+        }
+
         PLANS.forEach(p=>{
           const o=document.createElement('option');
           o.value=p.name; o.textContent=p.name; planSelect.appendChild(o);
         });
-        // Listeners
+
         function fillPlanFromSelection(){
           const sel=planSelect.value; const p=PLANS.find(x=>x.name===sel); if(!p) return;
           setVal('NOM_PLAN',p.name); setVal('MIN_GAR',p.minGar);
@@ -350,16 +364,22 @@
           const m=p.name.match(/(\d{2})M/); const plazo=m?m[1]:'';
           const plazoSel=document.getElementById('PLAZO_CONT'); if(plazo && ['12','24','36'].includes(plazo)) plazoSel.value=plazo;
         }
-        document.getElementById('btnAuto').onclick = fillPlanFromSelection;
+
+        const btnAuto  = document.getElementById('btnAuto');
+        const btnClear = document.getElementById('btnClearPlan');
         planSelect.onchange = fillPlanFromSelection;
-        document.getElementById('btnClearPlan').onclick = ()=>{
+        if(btnAuto)  btnAuto.onclick  = fillPlanFromSelection;
+        if(btnClear) btnClear.onclick = ()=>{
           ['NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS'].forEach(id=>setVal(id,''));
-          document.getElementById('PLAZO_CONT').value=''; planSelect.value='';
+          const plazoSel=document.getElementById('PLAZO_CONT'); if(plazoSel) plazoSel.value='';
+          planSelect.value='';
         };
+
+        if(statusEl) statusEl.textContent = 'Planes cargados: '+PLANS.length;
       }catch(e){
-        console.error('Error cargando planes', e);
-        const st = document.getElementById('status');
-        if(st) st.textContent = 'Error cargando planes. Recarga la página.';
+        console.error('Error cargando planes:', e);
+        const st=document.getElementById('status');
+        if(st) st.textContent='Error cargando planes. Revisa la consola.';
       }
     }
 
