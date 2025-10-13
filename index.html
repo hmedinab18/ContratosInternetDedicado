@@ -154,8 +154,23 @@
         <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
           <h2 class="text-xl font-semibold mb-3">6) Tarifas y Servicios</h2>
           <div class="grid sm:grid-cols-2 gap-3 mb-3">
+            <!-- SELECT PRE-RELLENO (sin depender de JS) -->
             <select id="planSelect" class="input">
               <option value="">— Selecciona un plan —</option>
+              <option>Internet Fibra Plus 100 Mbps - 36M</option>
+              <option>Internet Fibra Plus 200 Mbps - 36M</option>
+              <option>Internet Fibra Plus 100 Mbps - 24M</option>
+              <option>Internet Fibra Plus 200 Mbps - 24M</option>
+              <option>Pack Fibra Plus 100 Mbps - 36M</option>
+              <option>Pack Fibra Plus 200 Mbps - 36M</option>
+              <option>Pack Fibra Plus 100 Mbps - 24M</option>
+              <option>Pack Fibra Plus 200 Mbps - 24M</option>
+              <option>Internet Dedicado 10 Mbps</option>
+              <option>Internet Dedicado 20 Mbps</option>
+              <option>Internet Dedicado 50 Mbps</option>
+              <option>Internet Dedicado 100 Mbps</option>
+              <option>Internet Dedicado 200 Mbps</option>
+              <option>Internet Dedicado 250 Mbps</option>
             </select>
             <input id="TARIF_MENS" class="input" placeholder="S/ 0.00" />
           </div>
@@ -199,12 +214,29 @@
 
   <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
   <script>
-    /* =============== USUARIOS Y ROLES =============== */
+    /* ======== USUARIOS Y ROLES ======== */
     const USERS_KEY='contratos_users';
     const LOG_KEY='contratos_login_ok';
     const USER_KEY='contratos_login_user';
     const DEFAULT_ADMIN={u:'mob_hmedinab',p:'adminMobilenet2025',role:'admin'};
     const DEFAULT_USER={u:'usuario',p:'usuario123',role:'standard'};
+
+    const PLANS=[ // referencia para autocompletar
+      {name:"Internet Fibra Plus 100 Mbps - 36M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 270.00"},
+      {name:"Internet Fibra Plus 200 Mbps - 36M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 360.00"},
+      {name:"Internet Fibra Plus 100 Mbps - 24M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 370.00"},
+      {name:"Internet Fibra Plus 200 Mbps - 24M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 490.00"},
+      {name:"Pack Fibra Plus 100 Mbps - 36M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 279.90"},
+      {name:"Pack Fibra Plus 200 Mbps - 36M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 369.90"},
+      {name:"Pack Fibra Plus 100 Mbps - 24M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 379.90"},
+      {name:"Pack Fibra Plus 200 Mbps - 24M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 499.90"},
+      {name:"Internet Dedicado 10 Mbps",minGar:"100%",vmb:10,vminb:10,vms:10,vmins:10,tarif:"S/ 500.00"},
+      {name:"Internet Dedicado 20 Mbps",minGar:"100%",vmb:20,vminb:20,vms:20,vmins:20,tarif:"S/ 550.00"},
+      {name:"Internet Dedicado 50 Mbps",minGar:"100%",vmb:50,vminb:50,vms:50,vmins:50,tarif:"S/ 590.00"},
+      {name:"Internet Dedicado 100 Mbps",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 690.00"},
+      {name:"Internet Dedicado 200 Mbps",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 1,100.00"},
+      {name:"Internet Dedicado 250 Mbps",minGar:"100%",vmb:250,vminb:250,vms:250,vmins:250,tarif:"S/ 1,400.00"}
+    ];
 
     function loadUsers(){try{return JSON.parse(localStorage.getItem(USERS_KEY))||[]}catch{return []}}
     function saveUsers(a){localStorage.setItem(USERS_KEY,JSON.stringify(a))}
@@ -218,21 +250,13 @@
     function setLogged(o){localStorage.setItem(LOG_KEY,'1');localStorage.setItem(USER_KEY,JSON.stringify(o))}
     function clearLogged(){localStorage.removeItem(LOG_KEY);localStorage.removeItem(USER_KEY)}
     function authUser(u,p){
-      let arr; try{
-        const raw=localStorage.getItem(USERS_KEY);
-        arr = Array.isArray(JSON.parse(raw)) ? JSON.parse(raw) : [];
-      }catch{arr=[]}
+      let arr; try{arr = Array.isArray(JSON.parse(localStorage.getItem(USERS_KEY)))?JSON.parse(localStorage.getItem(USERS_KEY)):[];}catch{arr=[]}
       if(!arr.length){ensureDefaults();arr=loadUsers();}
       const user=arr.find(x=>x&&x.u===u);
       return (user && String(user.p)===String(p)) ? {u:user.u,role:user.role} : null;
     }
 
-    /* =============== LOGIN =============== */
-    function showApp(){
-      document.getElementById('loginOverlay').style.display='none';
-      applyRoleUI();
-      populatePlansSafe(); // <-- repoblar siempre
-    }
+    function showApp(){document.getElementById('loginOverlay').style.display='none';applyRoleUI();}
     function requireLogin(){
       ensureDefaults();
       const userEl=document.getElementById('loginUser');
@@ -243,25 +267,20 @@
       const btn=document.getElementById('loginBtn');
       const msg=document.getElementById('loginMsg');
       btn.addEventListener('click',()=>{
-        const u=userEl.value.trim();
-        const p=passEl.value.trim();
+        const u=userEl.value.trim(); const p=passEl.value.trim();
         const auth=authUser(u,p);
         if(auth){setLogged(auth);showApp();}
         else{msg.textContent='Usuario o contraseña incorrectos.';setTimeout(()=>msg.textContent='',2500);}
       });
       document.getElementById('resetLogin').addEventListener('click',()=>{
-        localStorage.removeItem(USERS_KEY);
-        localStorage.removeItem(LOG_KEY);
-        localStorage.removeItem(USER_KEY);
-        ensureDefaults();
-        userEl.value='usuario'; passEl.value='usuario123';
+        localStorage.removeItem(USERS_KEY);localStorage.removeItem(LOG_KEY);localStorage.removeItem(USER_KEY);
+        ensureDefaults(); userEl.value='usuario'; passEl.value='usuario123';
         msg.textContent='Acceso restablecido. Usa usuario/usuario123 o el admin.'; setTimeout(()=>msg.textContent='',3000);
       });
     }
     requireLogin();
     document.getElementById('logoutBtn').addEventListener('click',()=>{clearLogged();location.reload();});
 
-    /* =============== CONFIG (ADMIN) =============== */
     const btnConfig=document.getElementById('btnConfig');
     const modal=document.getElementById('configModal');
     const closeCfg=document.getElementById('closeConfig');
@@ -301,7 +320,7 @@
       document.getElementById('newUser').value=''; document.getElementById('newPass').value='';
     });
 
-    /* =============== UTIL DINERO =============== */
+    /* ======== UTIL DINERO ======== */
     const solesFmt=new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN',minimumFractionDigits:2});
     function normalizeMoneyInput(v){
       if(!v) return '';
@@ -312,78 +331,29 @@
     }
     function attachMoneyFormatter(id){ const el=document.getElementById(id); el.addEventListener('blur',()=>{ el.value=normalizeMoneyInput(el.value); }); }
     ['SUB_TOTAL','CONT_TOTAL','TARIF_MENS'].forEach(attachMoneyFormatter);
-    function byId(id){return document.getElementById(id)}
-    function setVal(id,val){const el=byId(id); if(el) el.value=val??""}
+    function setVal(id,val){const el=document.getElementById(id); if(el) el.value=val??""}
 
-    /* =============== PLANES =============== */
-    const PLANS=[
-      {name:"Internet Fibra Plus 100 Mbps - 36M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 270.00"},
-      {name:"Internet Fibra Plus 200 Mbps - 36M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 360.00"},
-      {name:"Internet Fibra Plus 100 Mbps - 24M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 370.00"},
-      {name:"Internet Fibra Plus 200 Mbps - 24M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 490.00"},
-      {name:"Pack Fibra Plus 100 Mbps - 36M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 279.90"},
-      {name:"Pack Fibra Plus 200 Mbps - 36M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 369.90"},
-      {name:"Pack Fibra Plus 100 Mbps - 24M",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 379.90"},
-      {name:"Pack Fibra Plus 200 Mbps - 24M",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 499.90"},
-      {name:"Internet Dedicado 10 Mbps",minGar:"100%",vmb:10,vminb:10,vms:10,vmins:10,tarif:"S/ 500.00"},
-      {name:"Internet Dedicado 20 Mbps",minGar:"100%",vmb:20,vminb:20,vms:20,vmins:20,tarif:"S/ 550.00"},
-      {name:"Internet Dedicado 50 Mbps",minGar:"100%",vmb:50,vminb:50,vms:50,vmins:50,tarif:"S/ 590.00"},
-      {name:"Internet Dedicado 100 Mbps",minGar:"100%",vmb:100,vminb:100,vms:100,vmins:100,tarif:"S/ 690.00"},
-      {name:"Internet Dedicado 200 Mbps",minGar:"100%",vmb:200,vminb:200,vms:200,vmins:200,tarif:"S/ 1,100.00"},
-      {name:"Internet Dedicado 250 Mbps",minGar:"100%",vmb:250,vminb:250,vms:250,vmins:250,tarif:"S/ 1,400.00"}
-    ];
-
-    // Cargar planes al iniciar el DOM y tras login
-    window.addEventListener('DOMContentLoaded', populatePlansSafe);
-
-    function populatePlansSafe(){
-      try{
-        const planSelect = document.getElementById('planSelect');
-        const statusEl   = document.getElementById('status');
-        if(!planSelect) return;
-
-        // Reset y opción por defecto
-        planSelect.innerHTML = '<option value="">— Selecciona un plan —</option>';
-
-        if(!Array.isArray(PLANS) || PLANS.length===0){
-          if(statusEl) statusEl.textContent = 'No hay planes cargados.';
-          return;
-        }
-
-        PLANS.forEach(p=>{
-          const o=document.createElement('option');
-          o.value=p.name; o.textContent=p.name; planSelect.appendChild(o);
-        });
-
-        function fillPlanFromSelection(){
-          const sel=planSelect.value; const p=PLANS.find(x=>x.name===sel); if(!p) return;
-          setVal('NOM_PLAN',p.name); setVal('MIN_GAR',p.minGar);
-          setVal('VEL_MAX_BAJ',String(p.vmb)); setVal('VEL_MIN_BAJ',String(p.vminb));
-          setVal('VEL_MAX_SUB',String(p.vms)); setVal('VEL_MIN_SUB',String(p.vmins));
-          setVal('TARIF_MENS',p.tarif);
-          const m=p.name.match(/(\d{2})M/); const plazo=m?m[1]:'';
-          const plazoSel=document.getElementById('PLAZO_CONT'); if(plazo && ['12','24','36'].includes(plazo)) plazoSel.value=plazo;
-        }
-
-        const btnAuto  = document.getElementById('btnAuto');
-        const btnClear = document.getElementById('btnClearPlan');
-        planSelect.onchange = fillPlanFromSelection;
-        if(btnAuto)  btnAuto.onclick  = fillPlanFromSelection;
-        if(btnClear) btnClear.onclick = ()=>{
-          ['NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS'].forEach(id=>setVal(id,''));
-          const plazoSel=document.getElementById('PLAZO_CONT'); if(plazoSel) plazoSel.value='';
-          planSelect.value='';
-        };
-
-        if(statusEl) statusEl.textContent = 'Planes cargados: '+PLANS.length;
-      }catch(e){
-        console.error('Error cargando planes:', e);
-        const st=document.getElementById('status');
-        if(st) st.textContent='Error cargando planes. Revisa la consola.';
-      }
+    /* ======== AUTOCOMPLETAR PLAN ======== */
+    function fillPlanFromSelection(){
+      const planSelect=document.getElementById('planSelect');
+      const sel=planSelect.value;
+      const p=PLANS.find(x=>x.name===sel);
+      if(!p) return;
+      setVal('NOM_PLAN',p.name); setVal('MIN_GAR',p.minGar);
+      setVal('VEL_MAX_BAJ',String(p.vmb)); setVal('VEL_MIN_BAJ',String(p.vminb));
+      setVal('VEL_MAX_SUB',String(p.vms)); setVal('VEL_MIN_SUB',String(p.vmins));
+      setVal('TARIF_MENS',p.tarif);
+      const m=p.name.match(/(\d{2})M/); const plazo=m?m[1]:'';
+      const plazoSel=document.getElementById('PLAZO_CONT'); if(plazo && ['12','24','36'].includes(plazo)) plazoSel.value=plazo;
     }
+    document.getElementById('planSelect').addEventListener('change',fillPlanFromSelection);
+    document.getElementById('btnAuto').addEventListener('click',fillPlanFromSelection);
+    document.getElementById('btnClearPlan').addEventListener('click',()=>{
+      ['NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS'].forEach(id=>setVal(id,''));
+      document.getElementById('PLAZO_CONT').value=''; document.getElementById('planSelect').value='';
+    });
 
-    /* =============== RECOLECCIÓN =============== */
+    /* ======== RECOLECCIÓN ======== */
     function gatherData(){
       const ids=[
         'RAZON_SOCIAL','RUC','DIRECCION','NUMERO_DE_CALLE','DPTO_INT','URB','DISTRITO','CIUDAD',
@@ -403,7 +373,7 @@
       return data;
     }
 
-    /* =============== MAPEOS PDF =============== */
+    /* ======== MAPEOS PDF ======== */
     const MAP_ARR={
       'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE',
       'DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD',
