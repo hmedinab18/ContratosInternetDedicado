@@ -4,48 +4,78 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Contrato Acceso Dedicado a Internet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
-<script>tailwind.config={theme:{extend:{}}}</script>
+<script>tailwind.config={theme:{extend:{fontFamily:{sans:['Inter','ui-sans-serif','system-ui']}}}}</script>
 <style>
-:root{--accent:#0ea5e9;--accent2:#22c55e}
+:root{--entel-blue:#005CB9;--entel-cyan:#00A9E0;--entel-orange:#FF6A13;--ink:#0B1220}
+:root{--accent:var(--entel-blue);--accent2:var(--entel-cyan)}
+*{letter-spacing:.01em}
+body{background:#f8fafc;color:#0f172a}
 .brand-gradient{background:linear-gradient(90deg,var(--accent),var(--accent2))}
-.input{background:#111827!important;border:1px solid #334155!important;border-radius:10px!important;padding:.7rem .9rem!important;width:100%!important;color:#f8fafc!important;-webkit-text-fill-color:#f8fafc!important;font-weight:600!important;caret-color:#22d3ee!important;transition:.15s}
-.input::placeholder{color:#9ca3af;opacity:1}
-.input:focus{outline:none;border-color:#22d3ee!important;box-shadow:0 0 0 2px #22d3ee55;background:#0f172a!important}
-.btn{background:var(--accent);color:#001014;font-weight:700;border-radius:14px;padding:.7rem 1rem;text-align:center}
-.btn.alt{background:#334155;color:#e5e7eb}
+.topbar{height:4px;background:linear-gradient(90deg,var(--entel-orange),var(--accent))}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:1.25rem;box-shadow:0 12px 24px -16px rgba(2,6,23,.25)}
+.input{background:#fff!important;border:1px solid #CBD5E1!important;border-radius:12px!important;padding:.7rem .9rem!important;width:100%!important;color:#0f172a!important;-webkit-text-fill-color:#0f172a!important;font-weight:600!important;caret-color:var(--accent2)!important;transition:.15s}
+.input::placeholder{color:#94a3b8;opacity:1}
+.input:focus{outline:none;border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(0,92,185,.15);background:#fff!important}
+select.input{appearance:auto}
+.btn{background:var(--accent);color:#ffffff;font-weight:700;border-radius:999px;padding:.7rem 1rem;text-align:center;box-shadow:0 8px 18px -8px rgba(0,92,185,.55)}
+.btn:hover{filter:brightness(.95)}
+.btn.alt{background:#ffffff;color:#0f172a;border:1px solid #e2e8f0;box-shadow:none}
+.btn.alt:hover{background:#f8fafc}
 .btn.danger{background:#ef4444;color:#fff}
-#loginOverlay{position:fixed;inset:0;background:rgba(2,6,23,.9);display:flex;align-items:center;justify-content:center;z-index:50}
-.modal{position:fixed;inset:0;background:rgba(2,6,23,.85);display:none;align-items:center;justify-content:center;z-index:60}
-.badge{font-size:.75rem;padding:.15rem .5rem;border-radius:999px;background:#374151;color:#e5e7eb;font-weight:700}
-table{border-collapse:collapse;width:100%}th,td{border-bottom:1px solid #334155;padding:.5rem;text-align:left}
-.iconbtn{padding:.25rem .5rem;border-radius:.5rem;background:#1f2937}
-.iconbtn:hover{background:#111827}
-label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
+.btn.ghost{background:transparent;color:#0f172a;border:1px dashed #cbd5e1}
+.badge{font-size:.75rem;padding:.2rem .6rem;border-radius:999px;background:#e6f2ff;color:#063f7a;font-weight:700;border:1px solid #bfd8ff}
+.iconbtn{padding:.35rem .6rem;border-radius:10px;background:#edf2f7;border:1px solid #e2e8f0}
+.iconbtn:hover{background:#e6edf5}
+label.switch{display:flex;align-items:center;gap:.5rem;font-size:.92rem}
+
+/* Overlays */
+#loginOverlay{position:fixed;inset:0;background:linear-gradient(120deg,rgba(0,92,185,.92),rgba(0,169,224,.92));display:flex;align-items:center;justify-content:center;z-index:50}
+.modal{position:fixed;inset:0;background:rgba(2,6,23,.55);display:none;align-items:center;justify-content:center;z-index:60}
+
+/* Tables */
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid #e2e8f0;padding:.55rem;text-align:left}
+thead tr{background:#f1f5f9}
+
+/* Utility tweaks */
+.small-muted{font-size:.8rem;color:#64748b}
 </style>
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100">
+<body class="min-h-screen">
+
+<!-- TOP GRADIENT BAR -->
+<div class="topbar"></div>
 
 <!-- LOGIN -->
 <div id="loginOverlay">
-  <div class="w-[95%] max-w-md bg-slate-900/80 border border-slate-700 rounded-2xl p-6 backdrop-blur-md shadow">
-    <h2 class="text-xl font-bold mb-4">Acceso</h2>
+  <div class="w-[95%] max-w-md card border-slate-200/90 backdrop-blur-md">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-9 h-9 rounded-full brand-gradient grid place-items-center text-white font-bold">e</div>
+      <h2 class="text-xl font-bold">Acceso</h2>
+    </div>
     <div class="space-y-3">
       <input id="loginUser" class="input" placeholder="Usuario" autocomplete="username"/>
       <input id="loginPass" class="input" type="password" placeholder="Contraseña" autocomplete="current-password"/>
       <button id="loginBtn" class="btn w-full">Ingresar</button>
       <button id="resetAll" class="btn alt w-full">Restablecer acceso</button>
-      <p id="loginMsg" class="text-sm text-red-400 h-5"></p>
-      <p id="ipInfo" class="text-xs opacity-70 h-4"></p>
-      <p class="text-xs opacity-70">*Acceso de conveniencia. No usar para datos sensibles.</p>
+      <p id="loginMsg" class="text-sm text-red-600 h-5"></p>
+      <p id="ipInfo" class="text-xs small-muted h-4"></p>
+      <p class="text-xs small-muted">*Acceso de conveniencia. No usar para datos sensibles.</p>
     </div>
   </div>
 </div>
 
 <!-- HEADER -->
-<header class="brand-gradient p-5 shadow-xl">
-  <div class="flex items-center justify-between gap-3">
-    <h1 class="text-2xl font-bold">Contrato Acceso Dedicado a Internet</h1>
+<header class="brand-gradient text-white">
+  <div class="max-w-6xl mx-auto p-5 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full bg-white/10 grid place-items-center font-extrabold">e</div>
+      <h1 class="text-2xl font-bold">Contrato Acceso Dedicado a Internet</h1>
+    </div>
     <div class="flex items-center gap-2">
       <span id="whoami" class="text-sm px-2 py-1 rounded bg-black/20">—</span>
       <button id="btnConfig" class="text-sm px-3 py-1 rounded bg-black/20 hover:bg-black/30 hidden">Configuración</button>
@@ -56,8 +86,8 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
 
 <!-- MODAL CONFIG (admin) -->
 <div id="configModal" class="modal">
-  <div class="w-[95%] max-w-5xl bg-slate-900/90 border border-slate-700 rounded-2xl p-6 backdrop-blur-md shadow relative">
-    <button id="closeConfig" class="absolute right-3 top-3 px-2 py-1 bg-slate-800/70 rounded">✕</button>
+  <div class="w-[95%] max-w-5xl card relative">
+    <button id="closeConfig" class="absolute right-3 top-3 px-2 py-1 iconbtn">✕</button>
     <h2 class="text-xl font-bold mb-4">Configuración (Admin)</h2>
 
     <div class="grid md:grid-cols-2 gap-6">
@@ -78,11 +108,11 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
           </label>
           <button id="btnCreateUser" class="btn">Crear usuario</button>
         </div>
-        <p id="userMsg" class="text-sm opacity-80 mt-2"></p>
+        <p id="userMsg" class="text-sm small-muted mt-2"></p>
 
         <h3 class="font-semibold mt-6 mb-2">Usuarios registrados</h3>
         <div id="usersList" class="text-sm space-y-2"></div>
-        <p class="text-xs opacity-70 mt-2">Tip: no puedes eliminar tu propia sesión ni dejar el sistema sin administradores.</p>
+        <p class="text-xs small-muted mt-2">Tip: no puedes eliminar tu propia sesión ni dejar el sistema sin administradores.</p>
       </div>
 
       <div>
@@ -90,9 +120,9 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
           <h3 class="font-semibold mb-2">Registros de contratos</h3>
           <button id="clearLogs" class="btn alt text-xs">Limpiar registros</button>
         </div>
-        <div class="max-h-[350px] overflow-auto border border-slate-700/70 rounded-lg">
+        <div class="max-h-[350px] overflow-auto border border-slate-200 rounded-xl">
           <table class="text-sm">
-            <thead class="bg-slate-800/80 sticky top-0">
+            <thead class="sticky top-0">
               <tr>
                 <th>Fecha</th><th>Usuario</th><th>RUC</th><th>Razón Social</th><th>RL</th><th>Teléfono</th><th>Correo</th>
               </tr>
@@ -100,7 +130,7 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
             <tbody id="logsBody"></tbody>
           </table>
         </div>
-        <p class="text-xs opacity-70 mt-2">Solo visible para el administrador.</p>
+        <p class="text-xs small-muted mt-2">Solo visible para el administrador.</p>
       </div>
     </div>
   </div>
@@ -111,7 +141,7 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
   <section class="grid md:grid-cols-3 gap-6">
     <div class="md:col-span-2 space-y-6">
       <!-- 1) Datos RL -->
-      <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+      <div class="card">
         <h2 class="text-xl font-semibold mb-3">1) Datos del Representante Legal</h2>
         <div class="grid sm:grid-cols-2 gap-3">
           <input id="RAZON_SOCIAL" class="input" placeholder="RAZON SOCIAL"/>
@@ -128,24 +158,24 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
           <input id="CARGO" class="input" placeholder="CARGO"/>
           <input id="DNI" class="input" placeholder="DNI"/>
           <input id="TELEFONO" class="input" placeholder="TELEFONO"/>
-          <input id="CORREO" class="input col-span-2" placeholder="CORREO"/>
+          <input id="CORREO" class="input sm:col-span-2" placeholder="CORREO"/>
         </div>
       </div>
 
       <!-- 2) Contacto -->
-      <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+      <div class="card">
         <h2 class="text-xl font-semibold mb-3">2) Contacto de Instalación</h2>
         <div class="grid sm:grid-cols-2 gap-3">
           <input id="CONT_NOMB" class="input" placeholder="CONT_NOMB"/>
           <input id="CONT_CARGO" class="input" placeholder="CONT_CARGO"/>
           <input id="CONT_DNI" class="input" placeholder="CONT_DNI"/>
           <input id="CONT_TELEF" class="input" placeholder="CONT_TELEF"/>
-          <input id="CONT_CORREO" class="input col-span-2" placeholder="CONT_CORREO"/>
+          <input id="CONT_CORREO" class="input sm:col-span-2" placeholder="CONT_CORREO"/>
         </div>
       </div>
 
       <!-- 3) Fecha -->
-      <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+      <div class="card">
         <h2 class="text-xl font-semibold mb-3">3) Fecha de Firma</h2>
         <div class="grid sm:grid-cols-3 gap-3">
           <input id="DIA" class="input" placeholder="DIA"/>
@@ -155,7 +185,7 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
       </div>
 
       <!-- 4) Firmante -->
-      <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+      <div class="card">
         <h2 class="text-xl font-semibold mb-3">4) Firmante</h2>
         <div class="grid sm:grid-cols-2 gap-3">
           <input id="RL" class="input" placeholder="RL"/>
@@ -164,7 +194,7 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
       </div>
 
       <!-- 5) Suplementarios -->
-      <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+      <div class="card">
         <h2 class="text-xl font-semibold mb-3">5) Servicios Suplementarios</h2>
         <div class="grid sm:grid-cols-3 gap-3">
           <input id="CANTIDAD" class="input" placeholder="CANTIDAD" inputmode="numeric"/>
@@ -178,7 +208,7 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
       </div>
 
       <!-- 6) Tarifas y Servicios -->
-      <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+      <div class="card">
         <h2 class="text-xl font-semibold mb-3">6) Tarifas y Servicios</h2>
         <div class="grid sm:grid-cols-2 gap-3 mb-3">
           <select id="planSelect" class="input">
@@ -206,12 +236,12 @@ label.switch{display:flex;align-items:center;gap:.5rem;font-size:.9rem}
 
     <!-- Sidebar -->
     <aside class="space-y-6">
-      <div class="bg-slate-900/60 rounded-2xl p-5 shadow">
+      <div class="card">
         <h2 class="text-lg font-semibold mb-3">Exportar PDFs</h2>
         <div class="flex flex-col gap-3">
           <button id="btnAll" class="btn w-full">GENERAR CONTRATOS</button>
           <a id="downloadLink" class="hidden btn" download>Descargar</a>
-          <p id="status" class="text-sm opacity-80"></p>
+          <p id="status" class="text-sm small-muted"></p>
         </div>
       </div>
     </aside>
@@ -333,6 +363,7 @@ function showApp(){
   };
   if(localStorage.getItem(LOG_KEY)==='1' && getLogged()){ showApp(); }
 })();
+
 document.getElementById('logoutBtn').onclick=()=>{ clearLogged(); location.reload(); };
 
 /* ====== Config modal ====== */
@@ -340,7 +371,7 @@ btnConfig.onclick=()=>{ if(getLogged()?.role!=='admin') return; renderUsers(); r
 closeCfg.onclick=()=> modal.style.display='none';
 modal.addEventListener('click',e=>{ if(e.target===modal) modal.style.display='none'; });
 
-/* ====== Crear / Eliminar usuarios (opcional UI existente) ====== */
+/* ====== Crear / Eliminar usuarios ====== */
 const roleSel = document.getElementById('newRole');
 const chkRestr = document.getElementById('newRestrict');
 roleSel.addEventListener('change',()=>{
@@ -376,10 +407,10 @@ function deleteUser(username){
 function renderUsers(){
   const c=document.getElementById('usersList'); c.innerHTML='';
   loadUsers().forEach(x=>{
-    const row=document.createElement('div'); row.className='flex items-center justify-between bg-slate-800/50 px-3 py-2 rounded';
+    const row=document.createElement('div'); row.className='flex items-center justify-between bg-slate-50 px-3 py-2 rounded-lg border border-slate-200';
     const left=document.createElement('div'); left.innerHTML=`<span class="font-semibold">${x.u}</span><span class="badge ml-2">${x.role}</span>`;
     const right=document.createElement('div');
-    const meta=document.createElement('span'); meta.className='text-xs opacity-60 mr-2';
+    const meta=document.createElement('span'); meta.className='text-xs small-muted mr-2';
     meta.textContent = (x.role==='admin'||!x.restrictIp)?'sin restr. IP':'IPs '+ALLOWED_IPS.join(', ');
     const del=document.createElement('button'); del.className='iconbtn text-xs'; del.textContent='Eliminar'; del.onclick=()=>deleteUser(x.u);
     right.appendChild(meta); right.appendChild(del);
@@ -453,7 +484,7 @@ function gatherData(){
   const ids=['RAZON_SOCIAL','RUC','DIRECCION','NUMERO_DE_CALLE','DPTO_INT','URB','DISTRITO','CIUDAD','APELLIDO_PATERNO','APELLIDO_MATERNO','NOMBRES','CARGO','DNI','TELEFONO','CORREO','CONT_NOMB','CONT_CARGO','CONT_DNI','CONT_TELEF','CONT_CORREO','DIA','MES','ANO','RL','CARGO_FIRM','CANTIDAD','SUB_TOTAL','NOMB_PROMOCION','DIREC_INST','CONT_TOTAL','NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS','PLAZO_INST','PLAZO_CONT'];
   const d={}; ids.forEach(id=>{let v=document.getElementById(id)?.value??''; if(['SUB_TOTAL','CONT_TOTAL','TARIF_MENS'].includes(id)) v=normalizeMoneyInput(v); if(id==='PLAZO_CONT') v=String(v).trim(); d[id]=v}); return d;
 }
-const MAP_ARR={'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE','DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD','APELLIDO PATERNO':'APELLIDO_PATERNO','APELLIDO MATERNO':'APELLIDO_MATERNO','NOMBRES':'NOMBRES','DNI':'DNI','TELEFONO':'TELEFONO','CORREO':'CORREO','CONT_NOMB':'CONT_NOMB','CONT_CARGO':'CONT_CARGO','CONT_DNI':'CONT_DNI','CONT_TELEF':'CONT_TELEF','CONT_CORREO':'CONT_CORREO','DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','CARGO':'CARGO_FIRM'};
+const MAP_ARR={'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE','DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD','APELLIDO PATERNO':'APELLIDO_PATERNO','APELLIDO MATERNO':'APELLIDO_MATERNO','NOMBRES':'NOMBRES','DNI':'DNI','TELEFONO':'TELEFONO','CORREO':'CORREO','DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','CARGO':'CARGO_FIRM'};
 const MAP_SUP={'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE','DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD','APELLIDO PATERNO':'APELLIDO_PATERNO','APELLIDO MATERNO':'APELLIDO_MATERNO','NOMBRES':'NOMBRES','DNI':'DNI','TELEFONO':'TELEFONO','CORREO':'CORREO','CONT_NOMB':'CONT_NOMB','CONT_CARGO':'CONT_CARGO','CONT_DNI':'CONT_DNI','CONT_TELEF':'CONT_TELEF','CONT_CORREO':'CONT_CORREO','CANTIDAD':'CANTIDAD','SUB_TOTAL':'SUB_TOTAL','TOTAL':'CONT_TOTAL','NOMB_PROMOCION':'NOMB_PROMOCION','DIREC_INST':'DIREC_INST','DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','CARGO':'CARGO_FIRM'};
 const MAP_TAR={'CARGO FIJO':'TARIF_MENS','CARGO':'CARGO_FIRM','CORREO':'CORREO','DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','NOM_PLAN':'NOM_PLAN','MIN_GAR':'MIN_GAR','VEL_MAX_BAJ':'VEL_MAX_BAJ','VEL_MIN_BAJ':'VEL_MIN_BAJ','VEL_MAX_SUB':'VEL_MAX_SUB','VEL_MIN_SUB':'VEL_MIN_SUB','TARIF_MENS':'TARIF_MENS','DIREC_INST':'DIREC_INST','PLAZO_INST':'PLAZO_INST','PLAZO_CONT':'PLAZO_CONT'};
 
