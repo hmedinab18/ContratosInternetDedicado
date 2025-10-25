@@ -140,6 +140,13 @@ thead tr{background:#f1f5f9}
 <main class="max-w-6xl mx-auto p-6 space-y-8">
   <section class="grid md:grid-cols-3 gap-6">
     <div class="md:col-span-2 space-y-6">
+
+      <!-- 0) Nro. de Oportunidad -->
+      <div class="card">
+        <h2 class="text-xl font-semibold mb-3">0) Nro. de Oportunidad</h2>
+        <input id="NRO_OPORT" class="input" placeholder="Nro. de Oportunidad"/>
+      </div>
+
       <!-- 1) Datos RL -->
       <div class="card">
         <h2 class="text-xl font-semibold mb-3">1) Datos del Representante Legal</h2>
@@ -481,14 +488,14 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 /* ====== PDFs ====== */
 function gatherData(){
-  const ids=['RAZON_SOCIAL','RUC','DIRECCION','NUMERO_DE_CALLE','DPTO_INT','URB','DISTRITO','CIUDAD','APELLIDO_PATERNO','APELLIDO_MATERNO','NOMBRES','CARGO','DNI','TELEFONO','CORREO','CONT_NOMB','CONT_CARGO','CONT_DNI','CONT_TELEF','CONT_CORREO','DIA','MES','ANO','RL','CARGO_FIRM','CANTIDAD','SUB_TOTAL','NOMB_PROMOCION','DIREC_INST','CONT_TOTAL','NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS','PLAZO_INST','PLAZO_CONT'];
+  const ids=['NRO_OPORT','RAZON_SOCIAL','RUC','DIRECCION','NUMERO_DE_CALLE','DPTO_INT','URB','DISTRITO','CIUDAD','APELLIDO_PATERNO','APELLIDO_MATERNO','NOMBRES','CARGO','DNI','TELEFONO','CORREO','CONT_NOMB','CONT_CARGO','CONT_DNI','CONT_TELEF','CONT_CORREO','DIA','MES','ANO','RL','CARGO_FIRM','CANTIDAD','SUB_TOTAL','NOMB_PROMOCION','DIREC_INST','CONT_TOTAL','NOM_PLAN','MIN_GAR','VEL_MAX_BAJ','VEL_MIN_BAJ','VEL_MAX_SUB','VEL_MIN_SUB','TARIF_MENS','PLAZO_INST','PLAZO_CONT'];
   const d={}; ids.forEach(id=>{let v=document.getElementById(id)?.value??''; if(['SUB_TOTAL','CONT_TOTAL','TARIF_MENS'].includes(id)) v=normalizeMoneyInput(v); if(id==='PLAZO_CONT') v=String(v).trim(); d[id]=v}); return d;
 }
 const MAP_ARR={'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE','DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD','APELLIDO PATERNO':'APELLIDO_PATERNO','APELLIDO MATERNO':'APELLIDO_MATERNO','NOMBRES':'NOMBRES','DNI':'DNI','TELEFONO':'TELEFONO','CORREO':'CORREO','DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','CARGO':'CARGO_FIRM'};
 const MAP_SUP={'RUC':'RUC','RAZON SOCIAL':'RAZON_SOCIAL','DIRECCION':'DIRECCION','NUMERO DE CALLE':'NUMERO_DE_CALLE','DPTO_INT':'DPTO_INT','URB':'URB','DISTRITO':'DISTRITO','CIUDAD':'CIUDAD','APELLIDO PATERNO':'APELLIDO_PATERNO','APELLIDO MATERNO':'APELLIDO_MATERNO','NOMBRES':'NOMBRES','DNI':'DNI','TELEFONO':'TELEFONO','CORREO':'CORREO','CONT_NOMB':'CONT_NOMB','CONT_CARGO':'CONT_CARGO','CONT_DNI':'CONT_DNI','CONT_TELEF':'CONT_TELEF','CONT_CORREO':'CONT_CORREO','CANTIDAD':'CANTIDAD','SUB_TOTAL':'SUB_TOTAL','TOTAL':'CONT_TOTAL','NOMB_PROMOCION':'NOMB_PROMOCION','DIREC_INST':'DIREC_INST','DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','CARGO':'CARGO_FIRM'};
 const MAP_TAR={'CARGO FIJO':'TARIF_MENS','CARGO':'CARGO_FIRM','CORREO':'CORREO','DIA':'DIA','MES':'MES','AÑO':'ANO','RL':'RL','NOM_PLAN':'NOM_PLAN','MIN_GAR':'MIN_GAR','VEL_MAX_BAJ':'VEL_MAX_BAJ','VEL_MIN_BAJ':'VEL_MIN_BAJ','VEL_MAX_SUB':'VEL_MAX_SUB','VEL_MIN_SUB':'VEL_MIN_SUB','TARIF_MENS':'TARIF_MENS','DIREC_INST':'DIREC_INST','PLAZO_INST':'PLAZO_INST','PLAZO_CONT':'PLAZO_CONT'};
 
-async function fillOne(pdfFileName,map){
+async function fillOne(pdfFileName,map,downloadAs){
   const status=document.getElementById('status'); status.textContent='Cargando '+pdfFileName+'...';
   const resp=await fetch('/'+pdfFileName,{cache:'no-store'});
   if(!resp.ok){ status.textContent='No se pudo cargar '+pdfFileName; return; }
@@ -503,15 +510,23 @@ async function fillOne(pdfFileName,map){
   const bytes=await pdfDoc.save();
   const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
   const a=document.getElementById('downloadLink');
-  a.href=url; a.download=pdfFileName; a.classList.remove('hidden'); a.click();
-  status.textContent='Generado '+pdfFileName+' ('+filled+' campos).';
+  a.href=url; a.download = downloadAs || pdfFileName; a.classList.remove('hidden'); a.click();
+  status.textContent='Generado '+(downloadAs||pdfFileName)+' ('+filled+' campos).';
 }
 
 async function exportAll(){
   const me=getLogged()||{u:'(desconocido)'};
-  await fillOne('Arrendamiento.pdf',MAP_ARR);
-  await fillOne('Servicios Suplementarios.pdf',MAP_SUP);
-  await fillOne('Tarifas y Servicios.pdf',MAP_TAR);
+
+  // Sanitiza el Nro. de Oportunidad para nombre de archivo
+  const nro=(document.getElementById('NRO_OPORT')?.value||'')
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g,'')  // inválidos en nombres de archivo
+    .replace(/\s+/g,' ');          // espacios normales
+
+  await fillOne('Arrendamiento.pdf',MAP_ARR, nro ? ('Arrendamiento - '+nro+'.pdf') : undefined);
+  await fillOne('Servicios Suplementarios.pdf',MAP_SUP, nro ? ('Servicios Suplementarios - '+nro+'.pdf') : undefined);
+  await fillOne('Tarifas y Servicios.pdf',MAP_TAR, nro ? ('Tarifas y Servicios - '+nro+'.pdf') : undefined);
+
   const d=gatherData();
   addLog({date:new Date().toLocaleString(),user:me.u,RUC:d.RUC||'',RAZON_SOCIAL:d.RAZON_SOCIAL||'',RL:d.RL||'',TELEFONO:d.TELEFONO||'',CORREO:d.CORREO||''});
   const st=document.getElementById('status'); st.textContent=(st.textContent?st.textContent+' • ':'')+'Registro guardado.';
